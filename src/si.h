@@ -32,6 +32,7 @@ short get_args
     bool *nbr,            /* O: flag to process NBR */
     bool *nbr2,           /* O: flag to process NBR2 */
     bool *savi,           /* O: flag to process SAVI */
+    bool *msavi,          /* O: flag to process MSAVI */
     bool *evi,            /* O: flag to process EVI */
     bool *verbose         /* O: verbose flag */
 );
@@ -62,6 +63,21 @@ void make_savi
     int nlines,           /* I: number of lines in the data arrays */
     int nsamps,           /* I: number of samples in the data arrays */
     int16 *savi           /* O: output SAVI */
+);
+
+void make_modified_savi
+(
+    int16 *nir,           /* I: input array of scaled reflectance data for
+                                the nir band */
+    int16 *red,           /* I: input array of scaled reflectance data for
+                                the red band */
+    float scale_factor,   /* I: scale factor for the reflectance values to
+                                unscale the pixels to their true value */
+    int fill_value,       /* I: fill value for the reflectance values */
+    int satu_value,       /* I: saturation value for the reflectance values */
+    int nlines,           /* I: number of lines in the data arrays */
+    int nsamps,           /* I: number of samples in the data arrays */
+    int16 *msavi          /* O: output MSAVI */
 );
 
 void make_evi

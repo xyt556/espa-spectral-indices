@@ -20,6 +20,7 @@ HISTORY:
 Date          Programmer       Reason
 ----------    ---------------  -------------------------------------
 4/6/2013      Gail Schmidt     Original Development
+5/9/2013      Gail Schmidt     Modified to support MSAVI (modified SAVI)
 
 NOTES:
   1. The products are output as {base_scene_name}-sr-{spectral_index_ext}.hdf.
@@ -34,6 +35,7 @@ int main (int argc, char *argv[])
     bool nbr_flag;           /* should we process the NBR product? */
     bool nbr2_flag;          /* should we process the NBR2 product? */
     bool savi_flag;          /* should we process the SAVI product? */
+    bool msavi_flag;         /* should we process the modified SAVI product? */
     bool evi_flag;           /* should we process the EVI product? */
 
     char FUNC_NAME[] = "main"; /* function name */
@@ -48,6 +50,7 @@ int main (int argc, char *argv[])
     char nbr_outfile[STR_SIZE];  /* output NBR filename */
     char nbr2_outfile[STR_SIZE]; /* output NBR2 filename */
     char savi_outfile[STR_SIZE]; /* output SAVI filename */
+    char msavi_outfile[STR_SIZE]; /* output MSAVI filename */
     char evi_outfile[STR_SIZE];  /* output EVI filename */
 
     int retval;              /* return status */
@@ -62,6 +65,7 @@ int main (int argc, char *argv[])
     int16 *nbr=NULL;         /* NBR values */
     int16 *nbr2=NULL;        /* NBR2 values */
     int16 *savi=NULL;        /* SAVI values */
+    int16 *msavi=NULL;       /* MSAVI values */
     int16 *evi=NULL;         /* EVI values */
 
     Input_t *sr_input=NULL;  /* input structure for the SR product */
@@ -71,13 +75,14 @@ int main (int argc, char *argv[])
     Output_t *nbr_output=NULL;  /* NBR output structure and metadata */
     Output_t *nbr2_output=NULL; /* NBR2 output structure and metadata */
     Output_t *savi_output=NULL; /* SAVI output structure and metadata */
+    Output_t *msavi_output=NULL; /* MSAVI output structure and metadata */
     Output_t *evi_output=NULL;  /* EVI output structure and metadata */
 
     printf ("Starting spectral indices processing ...\n");
 
     /* Read the command-line arguments */
     retval = get_args (argc, argv, &sr_infile, &ndvi_flag, &ndmi_flag,
-        &nbr_flag, &nbr2_flag, &savi_flag, &evi_flag, &verbose);
+        &nbr_flag, &nbr2_flag, &savi_flag, &msavi_flag, &evi_flag, &verbose);
     if (retval != SUCCESS)
     {   /* get_args already printed the error message */
         exit (ERROR);
@@ -114,6 +119,12 @@ int main (int argc, char *argv[])
 
         printf ("  Process SAVI - ");
         if (savi_flag)
+            printf ("yes\n");
+        else
+            printf ("no\n");
+
+        printf ("  Process MSAVI - ");
+        if (msavi_flag)
             printf ("yes\n");
         else
             printf ("no\n");
@@ -214,6 +225,20 @@ int main (int argc, char *argv[])
         if (savi == NULL)
         {
             sprintf (errmsg, "Error allocating memory for the SAVI");
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+    }
+
+    /* Allocate memory for the MSAVI */
+    if (msavi_flag)
+    {
+        msavi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
+        if (msavi == NULL)
+        {
+            sprintf (errmsg, "Error allocating memory for the MSAVI");
             error_handler (true, FUNC_NAME, errmsg);
             close_input (sr_input);
             free_input (sr_input);
@@ -372,6 +397,30 @@ int main (int argc, char *argv[])
         savi_output->buf[0] = savi;
     }
 
+    if (msavi_flag)
+    {
+        sprintf (msavi_outfile, "%s%s-sr-msavi.hdf", dir_name, scene_base_name);
+        if (create_output (msavi_outfile) != SUCCESS)
+        {   /* error message already printed */
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+
+        strcpy (out_sds_names[0], "MSAVI");
+        msavi_output = open_output (msavi_outfile, NUM_OUT_SDS, out_sds_names,
+            sr_input->nlines, sr_input->nsamps);
+        if (msavi_output == NULL)
+        {   /* error message already printed */
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+        msavi_output->buf[0] = msavi;
+    }
+
     if (evi_flag)
     {
         sprintf (evi_outfile, "%s%s-sr-evi.hdf", dir_name, scene_base_name);
@@ -522,7 +571,8 @@ int main (int argc, char *argv[])
         }
 
         /* Compute the SAVI and write to output HDF file
-           SAVI = ((nir - red) / (nir + red + L)) * (1 + L) */
+           SAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L is a
+           constant 0.5. */
         if (savi_flag)
         {
             make_savi (sr_input->refl_buf[3] /*b4*/,
@@ -533,6 +583,27 @@ int main (int argc, char *argv[])
             if (put_output_line (savi_output, 0, line, nlines_proc) != SUCCESS)
             {
                 sprintf (errmsg, "Writing output SAVI data to HDF for line %d",
+                    line);
+                error_handler (true, FUNC_NAME, errmsg);
+                close_input (sr_input);
+                free_input (sr_input);
+                exit (ERROR);
+            }
+        }
+
+        /* Compute the MSAVI (modified SAVI) and write to output HDF file
+           MSAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L in
+           this case is dynamic based on the vegetation. */
+        if (msavi_flag)
+        {
+            make_modified_savi (sr_input->refl_buf[3] /*b4*/,
+                sr_input->refl_buf[2] /*b3*/, sr_input->refl_scale_fact,
+                sr_input->refl_fill, sr_input->refl_saturate_val,
+                nlines_proc, sr_input->nsamps, msavi);
+
+            if (put_output_line (msavi_output, 0, line, nlines_proc) != SUCCESS)
+            {
+                sprintf (errmsg, "Writing output MSAVI data to HDF for line %d",
                     line);
                 error_handler (true, FUNC_NAME, errmsg);
                 close_input (sr_input);
@@ -643,6 +714,21 @@ int main (int argc, char *argv[])
         }
     }
 
+    if (msavi_flag)
+    {
+        strcpy (out_sds_names[0], "modified soil adjusted vegetation index");
+        if (put_metadata (msavi_output, NUM_OUT_SDS, out_sds_names,
+            &sr_input->meta) != SUCCESS)
+        {
+            sprintf (errmsg, "Error writing metadata to the output MSAVI HDF "
+                "file");
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+    }
+
     if (evi_flag)
     {
         strcpy (out_sds_names[0], "enhanced vegetation index");
@@ -687,6 +773,11 @@ int main (int argc, char *argv[])
     {
         close_output (savi_output);
         free_output (savi_output);
+    }
+    if (msavi_flag)
+    {
+        close_output (msavi_output);
+        free_output (msavi_output);
     }
     if (evi_flag)
     {
@@ -763,6 +854,19 @@ int main (int argc, char *argv[])
         }
     }
 
+    if (msavi_flag)
+    {
+        strcpy (out_sds_names[0], "MSAVI");
+        if (put_space_def_hdf (&space_def, msavi_outfile, NUM_OUT_SDS,
+            out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
+        {
+            sprintf (errmsg, "Error writing spatial metadata to the output "
+                "MSAVI HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
+    }
+
     if (evi_flag)
     {
         strcpy (out_sds_names[0], "EVI");
@@ -791,6 +895,8 @@ int main (int argc, char *argv[])
         free (nbr2);
     if (savi != NULL)
         free (savi);
+    if (msavi != NULL)
+        free (msavi);
     if (evi != NULL)
         free (evi);
 
@@ -819,12 +925,12 @@ void usage ()
 {
     printf ("spectral_indices produces the desired spectral index products "
             "for the input surface reflectance scene.  The options include "
-            "NDVI, NDMI (also known as NDWI or NDII), NBR, NBR2, SAVI, and "
-            "EVI.  The use may specify one, some, or all of the supported "
+            "NDVI, NDMI (also known as NDWI or NDII), NBR, NBR2, SAVI, MSAVI, "
+            "and EVI.  The use may specify one, some, or all of the supported "
             "indices for output.\n\n");
     printf ("usage: spectral_indices "
             "--sr=input_surface_reflectance_Landsat_filename "
-            "[--ndvi] [--ndmi] [--nbr] [--nbr2] [--savi] [--evi] "
+            "[--ndvi] [--ndmi] [--nbr] [--nbr2] [--savi] [--msavi] [--evi] "
             "[--verbose]\n");
 
     printf ("\nwhere the following parameters are required:\n");
@@ -841,6 +947,8 @@ void usage ()
     printf ("    -nbr2: process the normalized burn ratio 2 (NBR2) product\n");
     printf ("    -savi: process the soil adjusted vegetation index (SAVI) "
             "product (uses a soil brightness factor of 0.5)\n");
+    printf ("    -msavi: process the modified soil adjusted vegetation index "
+            "(MSAVI) product (uses a dynamic soil brightness factor)\n");
     printf ("    -evi: process the enhanced vegetation index (EVI) product\n");
     printf ("    -verbose: should intermediate messages be printed? (default "
             "is false)\n");

@@ -22,6 +22,7 @@ HISTORY:
 Date          Programmer       Reason
 ----------    ---------------  -------------------------------------
 4/6/2013      Gail Schmidt     Original Development
+5/9/2013      Gail Schmidt     Modified to support MSAVI
 
 NOTES:
   1. Memory is allocated for the input file.  This should be character a
@@ -38,6 +39,7 @@ short get_args
     bool *nbr,            /* O: flag to process NBR */
     bool *nbr2,           /* O: flag to process NBR2 */
     bool *savi,           /* O: flag to process SAVI */
+    bool *msavi,          /* O: flag to process MSAVI */
     bool *evi,            /* O: flag to process EVI */
     bool *verbose         /* O: verbose flag */
 )
@@ -50,6 +52,7 @@ short get_args
     static int nbr_flag=0;           /* process NBR flag */
     static int nbr2_flag=0;          /* process NBR2 flag */
     static int savi_flag=0;          /* process SAVI flag */
+    static int msavi_flag=0;         /* process MSAVI flag */
     static int evi_flag=0;           /* process EVI flag */
     char errmsg[STR_SIZE];           /* error message */
     char FUNC_NAME[] = "get_args";   /* function name */
@@ -61,6 +64,7 @@ short get_args
         {"nbr", no_argument, &nbr_flag, 1},
         {"nbr2", no_argument, &nbr2_flag, 1},
         {"savi", no_argument, &savi_flag, 1},
+        {"msavi", no_argument, &msavi_flag, 1},
         {"evi", no_argument, &evi_flag, 1},
         {"sr", required_argument, 0, 'i'},
         {"help", no_argument, 0, 'h'},
@@ -74,6 +78,7 @@ short get_args
     *nbr = false;
     *nbr2 = false;
     *savi = false;
+    *msavi = false;
     *evi = false;
 
     /* Loop through all the cmd-line options */
@@ -134,6 +139,8 @@ short get_args
         *nbr2 = true;
     if (savi_flag)
         *savi = true;
+    if (msavi_flag)
+        *msavi = true;
     if (evi_flag)
         *evi = true;
 
