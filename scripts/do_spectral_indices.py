@@ -34,8 +34,8 @@ def logIt (msg, log_handler):
 # desired indices specified by the user.
 #
 # History:
-#   Updated on ??? by Gail Schmidt, USGS/EROS
-#   {specify modifications}
+#   Updated on May 9, 2013 by Gail Schmidt, USGS/EROS
+#   Added support for modified SAVI (MSAVI)
 #
 # Usage: do_spectral_indices.py --help prints the help message
 ############################################################################
@@ -76,7 +76,8 @@ class SpectralIndices():
     #      the parameters will be pulled from the command line.
     #######################################################################
     def runSi (self, sr_infile=None, ndvi=False, ndmi=False, nbr=False, \
-        nbr2=False, savi=False, evi=False, logfile=None, usebin=None):
+        nbr2=False, savi=False, msavi=False, evi=False, logfile=None, \
+        usebin=None):
         # if no parameters were passed then get the info from the
         # command line
         if sr_infile == None:
@@ -100,6 +101,9 @@ class SpectralIndices():
             parser.add_option ("--savi", dest="savi", default=False,
                 action="store_true",
                 help="process SAVI (soil adjusted vegetation index")
+            parser.add_option ("--msavi", dest="msavi", default=False,
+                action="store_true",
+                help="process modified SAVI (soil adjusted vegetation index")
             parser.add_option ("--evi", dest="evi", default=False,
                 action="store_true",
                 help="process EVI (enhanced vegetation index")
@@ -126,6 +130,7 @@ class SpectralIndices():
             nbr = options.nbr
             nbr2 = options.nbr2
             savi = options.savi
+            msavi = options.msavi
             evi = options.evi
         
         # open the log file if it exists; use line buffering for the output
@@ -183,6 +188,7 @@ class SpectralIndices():
         nbr_opt_str = ""
         nbr2_opt_str = ""
         savi_opt_str = ""
+        msavi_opt_str = ""
         evi_opt_str = ""
 
         if ndvi:
@@ -195,10 +201,12 @@ class SpectralIndices():
             nbr2_opt_str = "--nbr2 "
         if savi:
             savi_opt_str = "--savi "
+        if msavi:
+            msavi_opt_str = "--msavi "
         if evi:
             evi_opt_str = "--evi "
 
-        cmdstr = "%sspectral_indices --sr=%s %s%s%s%s%s%s--verbose" % (bin_dir, sr_infile, ndvi_opt_str, ndmi_opt_str, nbr_opt_str, nbr2_opt_str, savi_opt_str, evi_opt_str)
+        cmdstr = "%sspectral_indices --sr=%s %s%s%s%s%s%s%s--verbose" % (bin_dir, sr_infile, ndvi_opt_str, ndmi_opt_str, nbr_opt_str, nbr2_opt_str, savi_opt_str, msavi_opt_str, evi_opt_str)
         print 'DEBUG: spectral_indices command: %s' % cmdstr
         (status, output) = commands.getstatusoutput (cmdstr)
         logIt (output, log_handler)
