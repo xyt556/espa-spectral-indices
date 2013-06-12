@@ -4,7 +4,7 @@
 MODULE:  spectral_indices
 
 PURPOSE:  Computes the specified spectral indices for the surface reflectance
-product.
+product.  This application also works on the TOA reflectance product.
 
 RETURN VALUE:
 Type = int
@@ -23,7 +23,7 @@ Date          Programmer       Reason
 5/9/2013      Gail Schmidt     Modified to support MSAVI (modified SAVI)
 
 NOTES:
-  1. The products are output as {base_scene_name}-sr-{spectral_index_ext}.hdf.
+  1. The products are output as {base_scene_name}-{spectral_index_ext}.hdf.
   2. Reflectance bands are stored in the buffer as 0=b1, 1=b2, 2=b3, 3=b4,
      4=b5, 5=b7.
 ******************************************************************************/
@@ -279,7 +279,7 @@ int main (int argc, char *argv[])
     /* Create and open the specified output HDF-EOS files */
     if (ndvi_flag)
     {
-        sprintf (ndvi_outfile, "%s%s-sr-ndvi.hdf", dir_name, scene_base_name);
+        sprintf (ndvi_outfile, "%s%s-ndvi.hdf", dir_name, scene_base_name);
         if (create_output (ndvi_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
@@ -303,7 +303,7 @@ int main (int argc, char *argv[])
 
     if (ndmi_flag)
     {
-        sprintf (ndmi_outfile, "%s%s-sr-ndmi.hdf", dir_name, scene_base_name);
+        sprintf (ndmi_outfile, "%s%s-ndmi.hdf", dir_name, scene_base_name);
         if (create_output (ndmi_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
@@ -327,7 +327,7 @@ int main (int argc, char *argv[])
 
     if (nbr_flag)
     {
-        sprintf (nbr_outfile, "%s%s-sr-nbr.hdf", dir_name, scene_base_name);
+        sprintf (nbr_outfile, "%s%s-nbr.hdf", dir_name, scene_base_name);
         if (create_output (nbr_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
@@ -351,7 +351,7 @@ int main (int argc, char *argv[])
 
     if (nbr2_flag)
     {
-        sprintf (nbr2_outfile, "%s%s-sr-nbr2.hdf", dir_name, scene_base_name);
+        sprintf (nbr2_outfile, "%s%s-nbr2.hdf", dir_name, scene_base_name);
         if (create_output (nbr2_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
@@ -375,7 +375,7 @@ int main (int argc, char *argv[])
 
     if (savi_flag)
     {
-        sprintf (savi_outfile, "%s%s-sr-savi.hdf", dir_name, scene_base_name);
+        sprintf (savi_outfile, "%s%s-savi.hdf", dir_name, scene_base_name);
         if (create_output (savi_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
@@ -399,7 +399,7 @@ int main (int argc, char *argv[])
 
     if (msavi_flag)
     {
-        sprintf (msavi_outfile, "%s%s-sr-msavi.hdf", dir_name, scene_base_name);
+        sprintf (msavi_outfile, "%s%s-msavi.hdf", dir_name, scene_base_name);
         if (create_output (msavi_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
@@ -423,7 +423,7 @@ int main (int argc, char *argv[])
 
     if (evi_flag)
     {
-        sprintf (evi_outfile, "%s%s-sr-evi.hdf", dir_name, scene_base_name);
+        sprintf (evi_outfile, "%s%s-evi.hdf", dir_name, scene_base_name);
         if (create_output (evi_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
