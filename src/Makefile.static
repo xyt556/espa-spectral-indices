@@ -44,6 +44,7 @@ spectral_indices: $(OBJ) $(INC)
 
 install:
 	cp $(EXE) $(BIN)
+	cp ../scripts/*.py $(BIN)
 
 clean:
 	$(RM) *.o $(EXE)

@@ -42,7 +42,8 @@ int main (int argc, char *argv[])
     char errmsg[STR_SIZE];   /* error message */
     char dir_name[STR_SIZE]; /* directory name of input SR file */
     char scene_base_name[STR_SIZE]; /* scene name of input SR file */
-    char out_sds_names[NUM_OUT_SDS][STR_SIZE];  /* output SDS names */
+    char short_name[STR_SIZE];   /* output SDS short name */
+    char out_sds_names[NUM_OUT_SDS][STR_SIZE];   /* output SDS names */
     char *hdf_grid_name = "Grid";  /* name of the grid for HDF-EOS */
     char *sr_infile=NULL;    /* input SR filename */
     char ndvi_outfile[STR_SIZE]; /* output NDVI filename */
@@ -641,8 +642,9 @@ int main (int argc, char *argv[])
     /* Write the output metadata for each HDF file */
     if (ndvi_flag)
     {
+        strcpy (short_name, "NDVI");
         strcpy (out_sds_names[0], "normalized difference vegetation index");
-        if (put_metadata (ndvi_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (ndvi_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output NDVI HDF "
@@ -656,8 +658,9 @@ int main (int argc, char *argv[])
 
     if (ndmi_flag)
     {
+        strcpy (short_name, "NDMI");
         strcpy (out_sds_names[0], "normalized difference moisture index");
-        if (put_metadata (ndmi_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (ndmi_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output NDMI HDF "
@@ -671,8 +674,9 @@ int main (int argc, char *argv[])
 
     if (nbr_flag)
     {
+        strcpy (short_name, "NBR");
         strcpy (out_sds_names[0], "normalized burn ratio");
-        if (put_metadata (nbr_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (nbr_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output NBR HDF "
@@ -686,8 +690,9 @@ int main (int argc, char *argv[])
 
     if (nbr2_flag)
     {
+        strcpy (short_name, "NBR2");
         strcpy (out_sds_names[0], "normalized burn ratio 2");
-        if (put_metadata (nbr2_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (nbr2_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output NBR2 HDF "
@@ -701,8 +706,9 @@ int main (int argc, char *argv[])
 
     if (savi_flag)
     {
+        strcpy (short_name, "SAVI");
         strcpy (out_sds_names[0], "soil adjusted vegetation index");
-        if (put_metadata (savi_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (savi_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output SAVI HDF "
@@ -716,8 +722,9 @@ int main (int argc, char *argv[])
 
     if (msavi_flag)
     {
+        strcpy (short_name, "MSAVI");
         strcpy (out_sds_names[0], "modified soil adjusted vegetation index");
-        if (put_metadata (msavi_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (msavi_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output MSAVI HDF "
@@ -731,8 +738,9 @@ int main (int argc, char *argv[])
 
     if (evi_flag)
     {
+        strcpy (short_name, "EVI");
         strcpy (out_sds_names[0], "enhanced vegetation index");
-        if (put_metadata (evi_output, NUM_OUT_SDS, out_sds_names,
+        if (put_metadata (evi_output, NUM_OUT_SDS, short_name, out_sds_names,
             &sr_input->meta) != SUCCESS)
         {
             sprintf (errmsg, "Error writing metadata to the output EVI HDF "
@@ -1017,14 +1025,5 @@ void find_scenename
     if (tokenptr != NULL)
         *tokenptr = '\0';
 
-    /* Strip the "lndsr." prefix from the filename to get the true scene
-       name */
-    tokenptr = strchr (basename, '.');
-    if (!strncmp (basename, "lndsr", 5) && tokenptr != NULL)
-    {
-        tokenptr++;
-        strcpy (scene_name, tokenptr);
-    }
-    else
-        strcpy (scene_name, basename);
+    strcpy (scene_name, basename);
 }

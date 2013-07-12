@@ -4,6 +4,7 @@
 #include "hdf.h"
 #include "mfhdf.h"
 #include "HdfEosDef.h"
+#include "HE2_config.h"
 #include "proj.h"
 #include "mystring.h"
 #include "myproj.h"
@@ -77,6 +78,7 @@ struct {
     {DFNT_FLOAT64, "DFNT_FLOAT64"}
 };
 
+#define SPACE_HDF_VERSION ("HDFVersion");
 #define SPACE_HDFEOS_VERSION ("HDFEOSVersion");
 #define SPACE_STRUCT_METADATA ("StructMetadata.0");
 #define SPACE_ORIENTATION_ANGLE_HDF ("OrientationAngle")
@@ -176,6 +178,8 @@ int put_space_def_hdf
     char errmsg[STR_SIZE];    /* error message */
     char struct_meta[MYHDF_MAX_NATTR_VAL];
     char cbuf[MYHDF_MAX_NATTR_VAL];
+    char hdf_version[] = H4_VERSION;
+    char hdfeos_version[] = VERSION;
     char *dim_names[2] = {"YDim", "XDim"};
     int ic;
     Map_coord_t lr_corner;
@@ -463,6 +467,26 @@ int put_space_def_hdf
         return (ERROR);
     }
   
+    attr.type = DFNT_CHAR8;
+    attr.nval = strlen(hdf_version);
+    attr.name = SPACE_HDF_VERSION;
+    if (put_attr_string (sds_file_id, &attr, hdf_version) != SUCCESS)
+    {
+        sprintf (errmsg, "Error writing attribute (hdf_version)");
+        error_handler (true, FUNC_NAME, errmsg);
+        return (ERROR);
+    }
+
+    attr.type = DFNT_CHAR8;
+    attr.nval = strlen(hdfeos_version);
+    attr.name = SPACE_HDFEOS_VERSION;
+    if (put_attr_string (sds_file_id, &attr, hdfeos_version) != SUCCESS)
+    {
+        sprintf (errmsg, "Error writing attribute (hdfeos_version)");
+        error_handler (true, FUNC_NAME, errmsg);
+        return (ERROR);
+    }
+
     attr.type = DFNT_CHAR8;
     attr.nval = strlen(struct_meta);
     attr.name = SPACE_STRUCT_METADATA;

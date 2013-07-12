@@ -67,8 +67,17 @@ int put_metadata
 (
     Output_t *this,           /* I: Output data structure */
     int nband,                /* I: number of bands to write */
+    char product_id[STR_SIZE], /* I: short band name to write */
     char band_names[NUM_OUT_SDS][STR_SIZE],  /* I: band names to write */
     Input_meta_t *meta        /* I: metadata to be written */
+);
+
+void generate_short_name
+(
+    char *sat,           /* I: satellite type */
+    char *inst,          /* I: instrument type */
+    char *product_id,    /* I: ID for the current band */
+    char *short_name     /* O: short name produced */
 );
 
 #endif

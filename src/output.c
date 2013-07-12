@@ -23,6 +23,8 @@
 #define OUTPUT_EAST_BOUND  ("EastBoundingCoordinate")
 #define OUTPUT_NORTH_BOUND ("NorthBoundingCoordinate")
 #define OUTPUT_SOUTH_BOUND ("SouthBoundingCoordinate")
+#define UL_LAT_LONG ("UpperLeftCornerLatLong")
+#define LR_LAT_LONG ("LowerRightCornerLatLong")
 
 #define OUTPUT_LONG_NAME        ("long_name")
 #define OUTPUT_UNITS            ("units")
@@ -502,6 +504,7 @@ int put_metadata
 (
     Output_t *this,           /* I: Output data structure */
     int nband,                /* I: number of bands to write */
+    char product_id[STR_SIZE], /* I: short band name to write */
     char band_names[NUM_OUT_SDS][STR_SIZE],  /* I: band names to write */
     Input_meta_t *meta        /* I: metadata to be written */
 )
@@ -514,6 +517,7 @@ int put_metadata
     double dval[NUM_OUT_SDS];     /* data value to write */
     char string[250];             /* string to be written */
     char long_name[250];          /* long name for the attribute */
+    char short_name[250];         /* short name for the attribute */
     char process_ver[100];        /* index processing version */
 
     int ib;                       /* looping variable for bands */
@@ -661,6 +665,17 @@ int put_metadata
         return (ERROR);
     }
 
+    generate_short_name (meta->sat, meta->inst, product_id, short_name);
+    attr.type = DFNT_CHAR8;
+    attr.nval = strlen(short_name);
+    attr.name = OUTPUT_SHORT_NAME;
+    if (put_attr_string (this->sds_file_id, &attr, short_name))
+    {
+        sprintf (errmsg, "Error writing attribute (short name)");
+        error_handler (true, FUNC_NAME, errmsg);
+        return (ERROR);
+    }
+
     /* Get the current time for the production date, convert it to UTC, and
        format it based on other date formats */
     if (time (&tp) == -1)
@@ -704,6 +719,34 @@ int put_metadata
         sprintf (errmsg, "Error writing attribute (index version)");
         error_handler (true, FUNC_NAME, errmsg);
         return (ERROR);
+    }
+
+    /* output the UL and LR corners if they are available */
+    if (!meta->ul_corner.is_fill && !meta->lr_corner.is_fill)
+    {
+        attr.type = DFNT_FLOAT64;
+        attr.nval = 2;
+        attr.name = UL_LAT_LONG;
+        dval[0] = meta->ul_corner.lat;
+        dval[1] = meta->ul_corner.lon;
+        if (put_attr_double (this->sds_file_id, &attr, dval) != SUCCESS)
+        {
+            sprintf (errmsg, "Error writing attribute (UL lat/long)");
+            error_handler (true, FUNC_NAME, errmsg);
+            return (ERROR);
+        }
+
+        attr.type = DFNT_FLOAT64;
+        attr.nval = 2;
+        attr.name = LR_LAT_LONG;
+        dval[0] = meta->lr_corner.lat;
+        dval[1] = meta->lr_corner.lon;
+        if (put_attr_double (this->sds_file_id, &attr, dval) != SUCCESS)
+        {
+            sprintf (errmsg, "Error writing attribute (LR lat/long)");
+            error_handler (true, FUNC_NAME, errmsg);
+            return (ERROR);
+        }
     }
 
     /* output the geographic bounding coordinates if they are available */
@@ -827,3 +870,34 @@ int put_metadata
   
     return (SUCCESS);
 }
+
+/******************************************************************************
+MODULE:  generate_short_name
+
+PURPOSE:  Generates the short name of the current product
+
+RETURN VALUE: None
+
+PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
+at the USGS EROS
+
+HISTORY:
+Date         Programmer       Reason
+---------    ---------------  -------------------------------------
+7/11/2013    Gail Schmidt     Original Development (based on input routines
+                              from the LEDAPS lndsr application)
+
+NOTES:
+******************************************************************************/
+void generate_short_name
+(
+    char *sat,           /* I: satellite type */
+    char *inst,          /* I: instrument type */
+    char *product_id,    /* I: ID for the current band */
+    char *short_name     /* O: short name produced */
+)
+{
+    /* Create the short name */
+    sprintf (short_name, "L%c%c%s", sat[strlen(sat)-1], inst[0], product_id);
+}
+
