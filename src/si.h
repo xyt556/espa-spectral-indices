@@ -97,4 +97,11 @@ void make_evi
     int16 *evi            /* O: output EVI */
 );
 
+int write_envi_hdr
+(
+    char *hdr_file,        /* I: name of header file to be generated */
+    Input_t *refl_input,   /* I: input structure for the reflectance file */
+    Space_def_t *space_def /* I: spatial definition information */
+);
+
 #endif

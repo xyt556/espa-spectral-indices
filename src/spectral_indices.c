@@ -53,6 +53,7 @@ int main (int argc, char *argv[])
     char savi_outfile[STR_SIZE]; /* output SAVI filename */
     char msavi_outfile[STR_SIZE]; /* output MSAVI filename */
     char evi_outfile[STR_SIZE];  /* output EVI filename */
+    char ehdr_file[STR_SIZE];    /* temporary ENVI header filename */
 
     int retval;              /* return status */
     int k;                   /* variable to keep track of the % complete */
@@ -752,11 +753,7 @@ int main (int argc, char *argv[])
         }
     }
 
-    /* Close the TOA reflectance product and the output spectral indices
-       products */
-    close_input (sr_input);
-    free_input (sr_input);
-
+    /* Close the output spectral indices products */
     if (ndvi_flag)
     {
         close_output (ndvi_output);
@@ -793,7 +790,8 @@ int main (int argc, char *argv[])
         free_output (evi_output);
     }
 
-    /* Write the spatial information, after the file has been closed */
+    /* Write the spatial information, after the file has been closed, along
+       with the associated ENVI header file */
     for (band = 0; band < NUM_OUT_SDS; band++)
         out_sds_types[band] = DFNT_INT16;
 
@@ -804,6 +802,15 @@ int main (int argc, char *argv[])
             out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
         {
             sprintf (errmsg, "Error writing spatial metadata to the output "
+                "NDVI HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
+
+        sprintf (ehdr_file, "%s.hdr", ndvi_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
                 "NDVI HDF file");
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
@@ -821,6 +828,15 @@ int main (int argc, char *argv[])
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
         }
+
+        sprintf (ehdr_file, "%s.hdr", ndmi_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
+                "NDMI HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
     }
 
     if (nbr_flag)
@@ -830,6 +846,15 @@ int main (int argc, char *argv[])
             out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
         {
             sprintf (errmsg, "Error writing spatial metadata to the output "
+                "NBR HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
+
+        sprintf (ehdr_file, "%s.hdr", nbr_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
                 "NBR HDF file");
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
@@ -847,6 +872,15 @@ int main (int argc, char *argv[])
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
         }
+
+        sprintf (ehdr_file, "%s.hdr", nbr2_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
+                "NBR2 HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
     }
 
     if (savi_flag)
@@ -856,6 +890,15 @@ int main (int argc, char *argv[])
             out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
         {
             sprintf (errmsg, "Error writing spatial metadata to the output "
+                "SAVI HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
+
+        sprintf (ehdr_file, "%s.hdr", savi_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
                 "SAVI HDF file");
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
@@ -873,6 +916,15 @@ int main (int argc, char *argv[])
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
         }
+
+        sprintf (ehdr_file, "%s.hdr", msavi_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
+                "MSAVI HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
     }
 
     if (evi_flag)
@@ -886,7 +938,20 @@ int main (int argc, char *argv[])
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
         }
+
+        sprintf (ehdr_file, "%s.hdr", evi_outfile);
+        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
+        {
+            sprintf (errmsg, "Error writing the ENVI header for the "
+                "EVI HDF file");
+            error_handler (true, FUNC_NAME, errmsg);
+            exit (ERROR);
+        }
     }
+
+    /* Close the reflectance product */
+    close_input (sr_input);
+    free_input (sr_input);
 
     /* Free the filename pointers */
     if (sr_infile != NULL)

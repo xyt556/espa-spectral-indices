@@ -23,6 +23,7 @@ SRC = date.c              \
       mystring.c          \
       output.c            \
       space.c             \
+      write_envi_hdr.c    \
       spectral_indices.c
 OBJ = $(SRC:.c=.o)
 
