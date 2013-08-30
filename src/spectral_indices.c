@@ -21,9 +21,14 @@ Date          Programmer       Reason
 ----------    ---------------  -------------------------------------
 4/6/2013      Gail Schmidt     Original Development
 5/9/2013      Gail Schmidt     Modified to support MSAVI (modified SAVI)
+8/30/2013     Gail Schmidt     Modified to write the vegetation indices to
+                               the same output file (NDVI, EVI, SAVI, MSAVI)
 
 NOTES:
   1. The products are output as {base_scene_name}-{spectral_index_ext}.hdf.
+     However, the NDVI, EVI, SAVI, and MSAVI products will all be written
+     to one output file {base_scene_name}-vi.hdf.  The order is as specified
+     in the previous sentence, based on which indices were actually specified.
   2. Reflectance bands are stored in the buffer as 0=b1, 1=b2, 2=b3, 3=b4,
      4=b5, 5=b7.
 ******************************************************************************/
@@ -43,16 +48,16 @@ int main (int argc, char *argv[])
     char dir_name[STR_SIZE]; /* directory name of input SR file */
     char scene_base_name[STR_SIZE]; /* scene name of input SR file */
     char short_name[STR_SIZE];   /* output SDS short name */
-    char out_sds_names[NUM_OUT_SDS][STR_SIZE];   /* output SDS names */
+    char out_sds_names[NUM_OUT_SDS][STR_SIZE];    /* output SDS names for the
+                                                     single band products */
+    char out_vi_sds_names[MAX_OUT_SDS][STR_SIZE]; /* output SDS names for the
+                                                     VI product */
     char *hdf_grid_name = "Grid";  /* name of the grid for HDF-EOS */
     char *sr_infile=NULL;    /* input SR filename */
-    char ndvi_outfile[STR_SIZE]; /* output NDVI filename */
+    char vi_outfile[STR_SIZE]; /* output NDVI filename */
     char ndmi_outfile[STR_SIZE]; /* output NDMI filename */
     char nbr_outfile[STR_SIZE];  /* output NBR filename */
     char nbr2_outfile[STR_SIZE]; /* output NBR2 filename */
-    char savi_outfile[STR_SIZE]; /* output SAVI filename */
-    char msavi_outfile[STR_SIZE]; /* output MSAVI filename */
-    char evi_outfile[STR_SIZE];  /* output EVI filename */
     char ehdr_file[STR_SIZE];    /* temporary ENVI header filename */
 
     int retval;              /* return status */
@@ -60,7 +65,13 @@ int main (int argc, char *argv[])
     int band;                /* current band to be processed */
     int line;                /* current line to be processed */
     int nlines_proc;         /* number of lines to process at one time */
-    int out_sds_types[NUM_OUT_SDS];  /* array of image SDS types */
+    int num_vi;              /* number of vegetation index products */
+    int vi_indx[MAX_OUT_SDS]; /* index of each of the VI bands within the VI
+                                 product */
+    int out_sds_types[NUM_OUT_SDS];     /* array of image SDS types for single
+                                           band products */
+    int out_vi_sds_types[MAX_OUT_SDS];  /* array of image SDS types for the
+                                           VI product */
 
     int16 *ndvi=NULL;        /* NDVI values */
     int16 *ndmi=NULL;        /* NDMI values */
@@ -72,13 +83,11 @@ int main (int argc, char *argv[])
 
     Input_t *sr_input=NULL;  /* input structure for the SR product */
     Space_def_t space_def;   /* spatial definition information */
-    Output_t *ndvi_output=NULL; /* NDVI output structure and metadata */
+    Output_t *vi_output=NULL;   /* output structure and metadata for the
+                                   VI products - NDVI, EVI, SAVI, MSAVI */
     Output_t *ndmi_output=NULL; /* NDMI output structure and metadata */
     Output_t *nbr_output=NULL;  /* NBR output structure and metadata */
     Output_t *nbr2_output=NULL; /* NBR2 output structure and metadata */
-    Output_t *savi_output=NULL; /* SAVI output structure and metadata */
-    Output_t *msavi_output=NULL; /* MSAVI output structure and metadata */
-    Output_t *evi_output=NULL;  /* EVI output structure and metadata */
 
     printf ("Starting spectral indices processing ...\n");
 
@@ -97,7 +106,25 @@ int main (int argc, char *argv[])
 
         printf ("  Process NDVI - ");
         if (ndvi_flag)
-            printf ("yes\n");
+            printf ("yes (written to the VI output product)\n");
+        else
+            printf ("no\n");
+
+        printf ("  Process EVI  - ");
+        if (evi_flag)
+            printf ("yes (written to the VI output product)\n");
+        else
+            printf ("no\n");
+
+        printf ("  Process SAVI - ");
+        if (savi_flag)
+            printf ("yes (written to the VI output product)\n");
+        else
+            printf ("no\n");
+
+        printf ("  Process MSAVI - ");
+        if (msavi_flag)
+            printf ("yes (written to the VI output product)\n");
         else
             printf ("no\n");
 
@@ -115,24 +142,6 @@ int main (int argc, char *argv[])
 
         printf ("  Process NBR2 - ");
         if (nbr2_flag)
-            printf ("yes\n");
-        else
-            printf ("no\n");
-
-        printf ("  Process SAVI - ");
-        if (savi_flag)
-            printf ("yes\n");
-        else
-            printf ("no\n");
-
-        printf ("  Process MSAVI - ");
-        if (msavi_flag)
-            printf ("yes\n");
-        else
-            printf ("no\n");
-
-        printf ("  Process EVI  - ");
-        if (evi_flag)
             printf ("yes\n");
         else
             printf ("no\n");
@@ -165,6 +174,7 @@ int main (int argc, char *argv[])
     }
 
     /* Allocate memory for the NDVI */
+    num_vi = 0;
     if (ndvi_flag)
     {
         ndvi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
@@ -176,6 +186,64 @@ int main (int argc, char *argv[])
             free_input (sr_input);
             exit (ERROR);
         }
+
+        /* update SDS info for opening the VI product */
+        vi_indx[SI_NDVI] = num_vi;
+        strcpy (out_vi_sds_names[num_vi++], "NDVI");
+    }
+
+    /* Allocate memory for the EVI */
+    if (evi_flag)
+    {
+        evi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
+        if (evi == NULL)
+        {
+            sprintf (errmsg, "Error allocating memory for the EVI");
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+
+        /* update SDS info for opening the VI product */
+        vi_indx[SI_EVI] = num_vi;
+        strcpy (out_vi_sds_names[num_vi++], "EVI");
+    }
+
+    /* Allocate memory for the SAVI */
+    if (savi_flag)
+    {
+        savi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
+        if (savi == NULL)
+        {
+            sprintf (errmsg, "Error allocating memory for the SAVI");
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+
+        /* update SDS info for opening the VI product */
+        vi_indx[SI_SAVI] = num_vi;
+        strcpy (out_vi_sds_names[num_vi++], "SAVI");
+    }
+
+    /* Allocate memory for the MSAVI */
+    if (msavi_flag)
+    {
+        msavi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
+        if (msavi == NULL)
+        {
+            sprintf (errmsg, "Error allocating memory for the MSAVI");
+            error_handler (true, FUNC_NAME, errmsg);
+            close_input (sr_input);
+            free_input (sr_input);
+            exit (ERROR);
+        }
+
+        /* update SDS info for opening the VI product */
+        vi_indx[SI_MSAVI] = num_vi;
+        strcpy (out_vi_sds_names[num_vi++], "MSAVI");
     }
 
     /* Allocate memory for the NDMI */
@@ -220,48 +288,6 @@ int main (int argc, char *argv[])
         }
     }
 
-    /* Allocate memory for the SAVI */
-    if (savi_flag)
-    {
-        savi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
-        if (savi == NULL)
-        {
-            sprintf (errmsg, "Error allocating memory for the SAVI");
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-    }
-
-    /* Allocate memory for the MSAVI */
-    if (msavi_flag)
-    {
-        msavi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
-        if (msavi == NULL)
-        {
-            sprintf (errmsg, "Error allocating memory for the MSAVI");
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-    }
-
-    /* Allocate memory for the EVI */
-    if (evi_flag)
-    {
-        evi = (int16 *) calloc (PROC_NLINES*sr_input->nsamps, sizeof (int16));
-        if (evi == NULL)
-        {
-            sprintf (errmsg, "Error allocating memory for the EVI");
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-    }
-
     /* Get the projection and spatial information from the input surface
        reflectance product */
     retval = get_space_def_hdf (&space_def, sr_infile, hdf_grid_name);
@@ -279,10 +305,10 @@ int main (int argc, char *argv[])
     find_scenename (sr_infile, dir_name, scene_base_name);
 
     /* Create and open the specified output HDF-EOS files */
-    if (ndvi_flag)
-    {
-        sprintf (ndvi_outfile, "%s%s-ndvi.hdf", dir_name, scene_base_name);
-        if (create_output (ndvi_outfile) != SUCCESS)
+    if (num_vi > 0)
+    {   /* one overall VI file for NDVI, EVI, SAVI, and MSAVI */
+        sprintf (vi_outfile, "%s%s-vi.hdf", dir_name, scene_base_name);
+        if (create_output (vi_outfile) != SUCCESS)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
             close_input (sr_input);
@@ -290,17 +316,25 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        strcpy (out_sds_names[0], "NDVI");
-        ndvi_output = open_output (ndvi_outfile, NUM_OUT_SDS, out_sds_names,
+        vi_output = open_output (vi_outfile, num_vi, out_vi_sds_names,
             sr_input->nlines, sr_input->nsamps);
-        if (ndvi_output == NULL)
+        if (vi_output == NULL)
         {   /* error message already printed */
             error_handler (true, FUNC_NAME, errmsg);
             close_input (sr_input);
             free_input (sr_input);
             exit (ERROR);
         }
-        ndvi_output->buf[0] = ndvi;
+
+        /* Set up the buffers for each band of the VI product */
+        if (ndvi_flag)
+            vi_output->buf[vi_indx[SI_NDVI]] = ndvi;
+        if (evi_flag)
+            vi_output->buf[vi_indx[SI_EVI]] = evi;
+        if (savi_flag)
+            vi_output->buf[vi_indx[SI_SAVI]] = savi;
+        if (msavi_flag)
+            vi_output->buf[vi_indx[SI_MSAVI]] = msavi;
     }
 
     if (ndmi_flag)
@@ -375,78 +409,6 @@ int main (int argc, char *argv[])
         nbr2_output->buf[0] = nbr2;
     }
 
-    if (savi_flag)
-    {
-        sprintf (savi_outfile, "%s%s-savi.hdf", dir_name, scene_base_name);
-        if (create_output (savi_outfile) != SUCCESS)
-        {   /* error message already printed */
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-
-        strcpy (out_sds_names[0], "SAVI");
-        savi_output = open_output (savi_outfile, NUM_OUT_SDS, out_sds_names,
-            sr_input->nlines, sr_input->nsamps);
-        if (savi_output == NULL)
-        {   /* error message already printed */
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-        savi_output->buf[0] = savi;
-    }
-
-    if (msavi_flag)
-    {
-        sprintf (msavi_outfile, "%s%s-msavi.hdf", dir_name, scene_base_name);
-        if (create_output (msavi_outfile) != SUCCESS)
-        {   /* error message already printed */
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-
-        strcpy (out_sds_names[0], "MSAVI");
-        msavi_output = open_output (msavi_outfile, NUM_OUT_SDS, out_sds_names,
-            sr_input->nlines, sr_input->nsamps);
-        if (msavi_output == NULL)
-        {   /* error message already printed */
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-        msavi_output->buf[0] = msavi;
-    }
-
-    if (evi_flag)
-    {
-        sprintf (evi_outfile, "%s%s-evi.hdf", dir_name, scene_base_name);
-        if (create_output (evi_outfile) != SUCCESS)
-        {   /* error message already printed */
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-
-        strcpy (out_sds_names[0], "EVI");
-        evi_output = open_output (evi_outfile, NUM_OUT_SDS, out_sds_names,
-            sr_input->nlines, sr_input->nsamps);
-        if (evi_output == NULL)
-        {   /* error message already printed */
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-        evi_output->buf[0] = evi;
-    }
-
     /* Print the processing status if verbose */
     if (verbose)
     {
@@ -501,9 +463,76 @@ int main (int argc, char *argv[])
                 sr_input->refl_saturate_val, nlines_proc, sr_input->nsamps,
                 ndvi);
 
-            if (put_output_line (ndvi_output, 0, line, nlines_proc) != SUCCESS)
+            if (put_output_line (vi_output, vi_indx[SI_NDVI], line, nlines_proc)
+                != SUCCESS)
             {
                 sprintf (errmsg, "Writing output NDVI data to HDF for line %d",
+                    line);
+                error_handler (true, FUNC_NAME, errmsg);
+                close_input (sr_input);
+                free_input (sr_input);
+                exit (ERROR);
+            }
+        }
+
+        /* Compute the EVI and write to output HDF file
+           EVI = (nir - red) / (nir + C1 * red - C2 * blue + L) */
+        if (evi_flag)
+        {
+            make_evi (sr_input->refl_buf[3] /*b4*/,
+                sr_input->refl_buf[2] /*b3*/, sr_input->refl_buf[0] /*b1*/,
+                sr_input->refl_scale_fact, sr_input->refl_fill,
+                sr_input->refl_saturate_val, nlines_proc, sr_input->nsamps,
+                evi);
+
+            if (put_output_line (vi_output, vi_indx[SI_EVI], line, nlines_proc)
+                != SUCCESS)
+            {
+                sprintf (errmsg, "Writing output EVI data to HDF for line %d",
+                    line);
+                error_handler (true, FUNC_NAME, errmsg);
+                close_input (sr_input);
+                free_input (sr_input);
+                exit (ERROR);
+            }
+        }
+
+        /* Compute the SAVI and write to output HDF file
+           SAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L is a
+           constant 0.5. */
+        if (savi_flag)
+        {
+            make_savi (sr_input->refl_buf[3] /*b4*/,
+                sr_input->refl_buf[2] /*b3*/, sr_input->refl_scale_fact,
+                sr_input->refl_fill, sr_input->refl_saturate_val,
+                nlines_proc, sr_input->nsamps, savi);
+
+            if (put_output_line (vi_output, vi_indx[SI_SAVI], line, nlines_proc)
+                != SUCCESS)
+            {
+                sprintf (errmsg, "Writing output SAVI data to HDF for line %d",
+                    line);
+                error_handler (true, FUNC_NAME, errmsg);
+                close_input (sr_input);
+                free_input (sr_input);
+                exit (ERROR);
+            }
+        }
+
+        /* Compute the MSAVI (modified SAVI) and write to output HDF file
+           MSAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L in
+           this case is dynamic based on the vegetation. */
+        if (msavi_flag)
+        {
+            make_modified_savi (sr_input->refl_buf[3] /*b4*/,
+                sr_input->refl_buf[2] /*b3*/, sr_input->refl_scale_fact,
+                sr_input->refl_fill, sr_input->refl_saturate_val,
+                nlines_proc, sr_input->nsamps, msavi);
+
+            if (put_output_line (vi_output, vi_indx[SI_MSAVI], line,
+                nlines_proc) != SUCCESS)
+            {
+                sprintf (errmsg, "Writing output MSAVI data to HDF for line %d",
                     line);
                 error_handler (true, FUNC_NAME, errmsg);
                 close_input (sr_input);
@@ -571,69 +600,6 @@ int main (int argc, char *argv[])
                 exit (ERROR);
             }
         }
-
-        /* Compute the SAVI and write to output HDF file
-           SAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L is a
-           constant 0.5. */
-        if (savi_flag)
-        {
-            make_savi (sr_input->refl_buf[3] /*b4*/,
-                sr_input->refl_buf[2] /*b3*/, sr_input->refl_scale_fact,
-                sr_input->refl_fill, sr_input->refl_saturate_val,
-                nlines_proc, sr_input->nsamps, savi);
-
-            if (put_output_line (savi_output, 0, line, nlines_proc) != SUCCESS)
-            {
-                sprintf (errmsg, "Writing output SAVI data to HDF for line %d",
-                    line);
-                error_handler (true, FUNC_NAME, errmsg);
-                close_input (sr_input);
-                free_input (sr_input);
-                exit (ERROR);
-            }
-        }
-
-        /* Compute the MSAVI (modified SAVI) and write to output HDF file
-           MSAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L in
-           this case is dynamic based on the vegetation. */
-        if (msavi_flag)
-        {
-            make_modified_savi (sr_input->refl_buf[3] /*b4*/,
-                sr_input->refl_buf[2] /*b3*/, sr_input->refl_scale_fact,
-                sr_input->refl_fill, sr_input->refl_saturate_val,
-                nlines_proc, sr_input->nsamps, msavi);
-
-            if (put_output_line (msavi_output, 0, line, nlines_proc) != SUCCESS)
-            {
-                sprintf (errmsg, "Writing output MSAVI data to HDF for line %d",
-                    line);
-                error_handler (true, FUNC_NAME, errmsg);
-                close_input (sr_input);
-                free_input (sr_input);
-                exit (ERROR);
-            }
-        }
-
-        /* Compute the EVI and write to output HDF file
-           EVI = (nir - red) / (nir + C1 * red - C2 * blue + L) */
-        if (evi_flag)
-        {
-            make_evi (sr_input->refl_buf[3] /*b4*/,
-                sr_input->refl_buf[2] /*b3*/, sr_input->refl_buf[0] /*b1*/,
-                sr_input->refl_scale_fact, sr_input->refl_fill,
-                sr_input->refl_saturate_val, nlines_proc, sr_input->nsamps,
-                evi);
-
-            if (put_output_line (evi_output, 0, line, nlines_proc) != SUCCESS)
-            {
-                sprintf (errmsg, "Writing output EVI data to HDF for line %d",
-                    line);
-                error_handler (true, FUNC_NAME, errmsg);
-                close_input (sr_input);
-                free_input (sr_input);
-                exit (ERROR);
-            }
-        }
     }  /* end for line */
 
     /* Print the processing status if verbose */
@@ -641,14 +607,26 @@ int main (int argc, char *argv[])
         printf ("  Spectral indices -- %% complete: 100%%\n");
 
     /* Write the output metadata for each HDF file */
-    if (ndvi_flag)
+    if (num_vi > 0)
     {
-        strcpy (short_name, "NDVI");
-        strcpy (out_sds_names[0], "normalized difference vegetation index");
-        if (put_metadata (ndvi_output, NUM_OUT_SDS, short_name, out_sds_names,
+        if (ndvi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_NDVI]],
+                "normalized difference vegetation index");
+        if (evi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_EVI]],
+                "enhanced vegetation index");
+        if (savi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_SAVI]],
+                "soil adjusted vegetation index");
+        if (msavi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_MSAVI]],
+                "modified soil adjusted vegetation index");
+
+        strcpy (short_name, "VI");
+        if (put_metadata (vi_output, num_vi, short_name, out_vi_sds_names,
             &sr_input->meta) != SUCCESS)
         {
-            sprintf (errmsg, "Error writing metadata to the output NDVI HDF "
+            sprintf (errmsg, "Error writing metadata to the output VI HDF "
                 "file");
             error_handler (true, FUNC_NAME, errmsg);
             close_input (sr_input);
@@ -705,59 +683,11 @@ int main (int argc, char *argv[])
         }
     }
 
-    if (savi_flag)
-    {
-        strcpy (short_name, "SAVI");
-        strcpy (out_sds_names[0], "soil adjusted vegetation index");
-        if (put_metadata (savi_output, NUM_OUT_SDS, short_name, out_sds_names,
-            &sr_input->meta) != SUCCESS)
-        {
-            sprintf (errmsg, "Error writing metadata to the output SAVI HDF "
-                "file");
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-    }
-
-    if (msavi_flag)
-    {
-        strcpy (short_name, "MSAVI");
-        strcpy (out_sds_names[0], "modified soil adjusted vegetation index");
-        if (put_metadata (msavi_output, NUM_OUT_SDS, short_name, out_sds_names,
-            &sr_input->meta) != SUCCESS)
-        {
-            sprintf (errmsg, "Error writing metadata to the output MSAVI HDF "
-                "file");
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-    }
-
-    if (evi_flag)
-    {
-        strcpy (short_name, "EVI");
-        strcpy (out_sds_names[0], "enhanced vegetation index");
-        if (put_metadata (evi_output, NUM_OUT_SDS, short_name, out_sds_names,
-            &sr_input->meta) != SUCCESS)
-        {
-            sprintf (errmsg, "Error writing metadata to the output EVI HDF "
-                "file");
-            error_handler (true, FUNC_NAME, errmsg);
-            close_input (sr_input);
-            free_input (sr_input);
-            exit (ERROR);
-        }
-    }
-
     /* Close the output spectral indices products */
-    if (ndvi_flag)
+    if (num_vi > 0)
     {
-        close_output (ndvi_output);
-        free_output (ndvi_output);
+        close_output (vi_output);
+        free_output (vi_output);
     }
     if (ndmi_flag)
     {
@@ -774,44 +704,39 @@ int main (int argc, char *argv[])
         close_output (nbr2_output);
         free_output (nbr2_output);
     }
-    if (savi_flag)
-    {
-        close_output (savi_output);
-        free_output (savi_output);
-    }
-    if (msavi_flag)
-    {
-        close_output (msavi_output);
-        free_output (msavi_output);
-    }
-    if (evi_flag)
-    {
-        close_output (evi_output);
-        free_output (evi_output);
-    }
 
     /* Write the spatial information, after the file has been closed, along
        with the associated ENVI header file */
+    for (band = 0; band < MAX_OUT_SDS; band++)
+        out_vi_sds_types[band] = DFNT_INT16;
     for (band = 0; band < NUM_OUT_SDS; band++)
         out_sds_types[band] = DFNT_INT16;
 
-    if (ndvi_flag)
+    if (num_vi > 0)
     {
-        strcpy (out_sds_names[0], "NDVI");
-        if (put_space_def_hdf (&space_def, ndvi_outfile, NUM_OUT_SDS,
-            out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
+        if (ndvi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_NDVI]], "NDVI");
+        if (evi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_EVI]], "EVI");
+        if (savi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_SAVI]], "SAVI");
+        if (msavi_flag)
+            strcpy (out_vi_sds_names[vi_indx[SI_MSAVI]], "MSAVI");
+
+        if (put_space_def_hdf (&space_def, vi_outfile, num_vi,
+            out_vi_sds_names, out_vi_sds_types, hdf_grid_name) != SUCCESS)
         {
             sprintf (errmsg, "Error writing spatial metadata to the output "
-                "NDVI HDF file");
+                "VI HDF file");
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
         }
 
-        sprintf (ehdr_file, "%s.hdr", ndvi_outfile);
+        sprintf (ehdr_file, "%s.hdr", vi_outfile);
         if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
         {
-            sprintf (errmsg, "Error writing the ENVI header for the "
-                "NDVI HDF file");
+            sprintf (errmsg, "Error writing the ENVI header for the VI HDF "
+                "file");
             error_handler (true, FUNC_NAME, errmsg);
             exit (ERROR);
         }
@@ -883,72 +808,6 @@ int main (int argc, char *argv[])
         }
     }
 
-    if (savi_flag)
-    {
-        strcpy (out_sds_names[0], "SAVI");
-        if (put_space_def_hdf (&space_def, savi_outfile, NUM_OUT_SDS,
-            out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
-        {
-            sprintf (errmsg, "Error writing spatial metadata to the output "
-                "SAVI HDF file");
-            error_handler (true, FUNC_NAME, errmsg);
-            exit (ERROR);
-        }
-
-        sprintf (ehdr_file, "%s.hdr", savi_outfile);
-        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
-        {
-            sprintf (errmsg, "Error writing the ENVI header for the "
-                "SAVI HDF file");
-            error_handler (true, FUNC_NAME, errmsg);
-            exit (ERROR);
-        }
-    }
-
-    if (msavi_flag)
-    {
-        strcpy (out_sds_names[0], "MSAVI");
-        if (put_space_def_hdf (&space_def, msavi_outfile, NUM_OUT_SDS,
-            out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
-        {
-            sprintf (errmsg, "Error writing spatial metadata to the output "
-                "MSAVI HDF file");
-            error_handler (true, FUNC_NAME, errmsg);
-            exit (ERROR);
-        }
-
-        sprintf (ehdr_file, "%s.hdr", msavi_outfile);
-        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
-        {
-            sprintf (errmsg, "Error writing the ENVI header for the "
-                "MSAVI HDF file");
-            error_handler (true, FUNC_NAME, errmsg);
-            exit (ERROR);
-        }
-    }
-
-    if (evi_flag)
-    {
-        strcpy (out_sds_names[0], "EVI");
-        if (put_space_def_hdf (&space_def, evi_outfile, NUM_OUT_SDS,
-            out_sds_names, out_sds_types, hdf_grid_name) != SUCCESS)
-        {
-            sprintf (errmsg, "Error writing spatial metadata to the output "
-                "EVI HDF file");
-            error_handler (true, FUNC_NAME, errmsg);
-            exit (ERROR);
-        }
-
-        sprintf (ehdr_file, "%s.hdr", evi_outfile);
-        if (write_envi_hdr (ehdr_file, sr_input, &space_def) == ERROR)
-        {
-            sprintf (errmsg, "Error writing the ENVI header for the "
-                "EVI HDF file");
-            error_handler (true, FUNC_NAME, errmsg);
-            exit (ERROR);
-        }
-    }
-
     /* Close the reflectance product */
     close_input (sr_input);
     free_input (sr_input);
@@ -997,13 +856,16 @@ NOTES:
 void usage ()
 {
     printf ("spectral_indices produces the desired spectral index products "
-            "for the input surface reflectance scene.  The options include "
-            "NDVI, NDMI (also known as NDWI or NDII), NBR, NBR2, SAVI, MSAVI, "
-            "and EVI.  The use may specify one, some, or all of the supported "
-            "indices for output.\n\n");
+            "for the input surface reflectance scene. The options include "
+            "NDVI, EVI, SAVI, MSAVI, NDMI (also known as NDWI or NDII), NBR, "
+            "and NBR2. The user may specify one, some, or all of the supported "
+            "indices for output.\n");
+    printf ("The vegetation indices (if specified) will be written to one "
+            "combined output file, where as the other indices will be written "
+            "to single band output files.\n\n");
     printf ("usage: spectral_indices "
             "--sr=input_surface_reflectance_Landsat_filename "
-            "[--ndvi] [--ndmi] [--nbr] [--nbr2] [--savi] [--msavi] [--evi] "
+            "[--ndvi] [--evi] [--savi] [--msavi] [--ndmi] [--nbr] [--nbr2] "
             "[--verbose]\n");
 
     printf ("\nwhere the following parameters are required:\n");
@@ -1013,16 +875,16 @@ void usage ()
     printf ("\nwhere the following parameters are optional:\n");
     printf ("    -ndvi: process the normalized difference vegetation index "
             "(NDVI) product\n");
+    printf ("    -evi: process the enhanced vegetation index (EVI) product\n");
+    printf ("    -savi: process the soil adjusted vegetation index (SAVI) "
+            "product (uses a soil brightness factor of 0.5)\n");
+    printf ("    -msavi: process the modified soil adjusted vegetation index "
+            "(MSAVI) product (uses a dynamic soil brightness factor)\n");
     printf ("    -ndmi: process the normalized difference moisture index "
             "(NDMI) product.  This is also known as the water index (NDWI) "
             "or NDII.\n");
     printf ("    -nbr: process the normalized burn ratio (NBR) product\n");
     printf ("    -nbr2: process the normalized burn ratio 2 (NBR2) product\n");
-    printf ("    -savi: process the soil adjusted vegetation index (SAVI) "
-            "product (uses a soil brightness factor of 0.5)\n");
-    printf ("    -msavi: process the modified soil adjusted vegetation index "
-            "(MSAVI) product (uses a dynamic soil brightness factor)\n");
-    printf ("    -evi: process the enhanced vegetation index (EVI) product\n");
     printf ("    -verbose: should intermediate messages be printed? (default "
             "is false)\n");
     printf ("\nspectral_indices --help will print the usage statement\n");

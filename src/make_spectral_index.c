@@ -218,7 +218,7 @@ void make_modified_savi
             red_unscaled = (float) (red[pix] * scale_factor);
             ratio = ((2.0 * nir_unscaled + 1.0) -
                 sqrt ((2.0 * nir_unscaled + 1.0) * (2.0 * nir_unscaled + 1.0) -
-                (8.0 * (nir_unscaled - red_unscaled)))) * 0.5;
+                (8.0 * (nir_unscaled - red_unscaled)))) * L;
 
             /* Keep the ratio between -1.0, 1.0 */
             if (ratio > 1.0)

@@ -5,8 +5,14 @@
 #include "input.h"
 #include "space.h"
 
+/* Define the order of vegetation products to be written to the vegetation
+   index file */
+typedef enum {SI_NDVI=0, SI_EVI, SI_SAVI, SI_MSAVI, NUM_VI} Myvi_list_t;
+
 /* Define the number of SDS that will be output to the HDF-EOS file.  The
-   actual SDS names are defined in spectral_indices.c. */
+   actual SDS names are defined in spectral_indices.c.  Maximum is currently
+   the count in the vegetation index products. */
+#define MAX_OUT_SDS NUM_VI
 #define NUM_OUT_SDS 1
 
 /* Define some of the constants to use in the output data products */
@@ -23,8 +29,8 @@ typedef struct {
   int nband;            /* Number of output image bands */
   Img_coord_int_t size; /* Output image size */
   int32 sds_file_id;    /* SDS file id */
-  Myhdf_sds_t sds[NUM_OUT_SDS]; /* SDS data structures for image data */
-  int16 *buf[NUM_OUT_SDS]; /* Output data buffer */
+  Myhdf_sds_t sds[MAX_OUT_SDS]; /* SDS data structures for image data */
+  int16 *buf[MAX_OUT_SDS]; /* Output data buffer */
 } Output_t;
 
 /* Prototypes */
@@ -38,8 +44,7 @@ Output_t *open_output
     char *file_name,                /* I: name of output HDF file */
     int nband,                      /* I: number of image bands (SDSs) to be
                                           created */
-    char sds_names[NUM_OUT_SDS][STR_SIZE],  /* I: array of SDS names for each
-                                                  band */
+    char sds_names[][STR_SIZE],     /* I: array of SDS names for each band */
     int nlines,                     /* I: number of lines in image */
     int nsamps                      /* I: number of samples in image */
 );
@@ -68,7 +73,7 @@ int put_metadata
     Output_t *this,           /* I: Output data structure */
     int nband,                /* I: number of bands to write */
     char product_id[STR_SIZE], /* I: short band name to write */
-    char band_names[NUM_OUT_SDS][STR_SIZE],  /* I: band names to write */
+    char band_names[MAX_OUT_SDS][STR_SIZE],  /* I: band names to write */
     Input_meta_t *meta        /* I: metadata to be written */
 );
 

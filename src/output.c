@@ -118,14 +118,13 @@ Output_t *open_output
     char *file_name,                /* I: name of output HDF file */
     int nband,                      /* I: number of image bands (SDSs) to be
                                           created */
-    char sds_names[NUM_OUT_SDS][STR_SIZE],  /* I: array of SDS names for each
-                                                  band */
+    char sds_names[][STR_SIZE],     /* I: array of SDS names for each band */
     int nlines,                     /* I: number of lines in image */
     int nsamps                      /* I: number of samples in image */
 )
 {
     Output_t *this = NULL;
-    char FUNC_NAME[] = "create_output";   /* function name */
+    char FUNC_NAME[] = "open_output";   /* function name */
     char errmsg[STR_SIZE];    /* error message */
     Myhdf_dim_t *dim[MYHDF_MAX_RANK];     /* dimension information */
     Myhdf_sds_t *sds = NULL;  /* SDS information */
@@ -147,7 +146,7 @@ Output_t *open_output
         return (NULL);
     }
   
-    if (nband < 1 || nband > NUM_OUT_SDS)
+    if (nband < 1 || nband > MAX_OUT_SDS)
     {
         sprintf (errmsg, "Invalid number of image bands");
         error_handler (true, FUNC_NAME, errmsg);
@@ -505,7 +504,7 @@ int put_metadata
     Output_t *this,           /* I: Output data structure */
     int nband,                /* I: number of bands to write */
     char product_id[STR_SIZE], /* I: short band name to write */
-    char band_names[NUM_OUT_SDS][STR_SIZE],  /* I: band names to write */
+    char band_names[MAX_OUT_SDS][STR_SIZE],  /* I: band names to write */
     Input_meta_t *meta        /* I: metadata to be written */
 )
 {
@@ -514,7 +513,7 @@ int put_metadata
     Myhdf_attr_t attr;            /* HDF attributes */
     char date[MAX_DATE_LEN + 1];  /* date string */
     char prod_date[MAX_DATE_LEN + 1];  /* production date for index products */
-    double dval[NUM_OUT_SDS];     /* data value to write */
+    double dval[MAX_OUT_SDS];     /* data value to write */
     char string[250];             /* string to be written */
     char long_name[250];          /* long name for the attribute */
     char short_name[250];         /* short name for the attribute */
@@ -534,7 +533,7 @@ int put_metadata
         return (ERROR);
     }
   
-    if (nband < 1 || nband > NUM_OUT_SDS)
+    if (nband < 1 || nband > MAX_OUT_SDS)
     {
         sprintf (errmsg, "Invalid number of bands.");
         error_handler (true, FUNC_NAME, errmsg);
