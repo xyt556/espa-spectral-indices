@@ -820,6 +820,7 @@ int put_metadata
             error_handler (true, FUNC_NAME, errmsg);
             return (ERROR);
         }
+        free (units_b);
 
         attr.type = DFNT_INT16;
         attr.nval = 1;

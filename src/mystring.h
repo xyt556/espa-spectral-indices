@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "error_handler.h"
 
-#define INDEX_VERSION "1.2.2"
+#define INDEX_VERSION "1.2.0"
 
 #define STR_SIZE 1024
 
