@@ -54,7 +54,9 @@ int main (int argc, char *argv[])
                                                      VI product */
     char *hdf_grid_name = "Grid";  /* name of the grid for HDF-EOS */
     char *sr_infile=NULL;    /* input SR filename */
-    char vi_outfile[STR_SIZE]; /* output NDVI filename */
+    char vi_outfile[STR_SIZE];   /* output VI filename, containing all the
+                                    user-specified SDSs which are vegetation
+                                    index products */
     char ndmi_outfile[STR_SIZE]; /* output NDMI filename */
     char nbr_outfile[STR_SIZE];  /* output NBR filename */
     char nbr2_outfile[STR_SIZE]; /* output NBR2 filename */
@@ -520,8 +522,9 @@ int main (int argc, char *argv[])
         }
 
         /* Compute the MSAVI (modified SAVI) and write to output HDF file
-           MSAVI = ((nir - red) / (nir + red + L)) * (1 + L), where L in
-           this case is dynamic based on the vegetation. */
+           MSAVI = (2 * nir + 1) - SQRT (SQR (2 * nir + 1) - (8 * (nir - red)))
+                    * L
+           where L is the soil brightness correction factor of 0.5*/
         if (msavi_flag)
         {
             make_modified_savi (sr_input->refl_buf[3] /*b4*/,
