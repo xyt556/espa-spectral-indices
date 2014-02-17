@@ -5,28 +5,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "bool.h"
-#include "mystring.h"
-#include "error_handler.h"
+#include <stdbool.h>
+#include "common.h"
 #include "input.h"
 #include "output.h"
-#include "space.h"
+#include "espa_metadata.h"
+#include "parse_metadata.h"
+#include "write_metadata.h"
+#include "envi_header.h"
+#include "error_handler.h"
 
 /* Prototypes */
 void usage ();
-
-void find_scenename
-(
-    char *sr_filename,   /* I: Input surface reflectance filename */
-    char *dir_name,      /* O: Output directory name */
-    char *scene_name     /* O: Output scene name */
-);
 
 short get_args
 (
     int argc,             /* I: number of cmd-line args */
     char *argv[],         /* I: string of cmd-line args */
-    char **sr_infile,     /* O: address of input surface reflectance file */
+    char **xml_infile,    /* O: address of input XML file */
+    bool *toa,            /* O: flag to process TOA reflectance */
     bool *ndvi,           /* O: flag to process NDVI */
     bool *ndmi,           /* O: flag to process NDMI */
     bool *nbr,            /* O: flag to process NBR */
@@ -95,13 +92,6 @@ void make_evi
     int nlines,           /* I: number of lines in the data arrays */
     int nsamps,           /* I: number of samples in the data arrays */
     int16 *evi            /* O: output EVI */
-);
-
-int write_envi_hdr
-(
-    char *hdr_file,        /* I: name of header file to be generated */
-    Input_t *refl_input,   /* I: input structure for the reflectance file */
-    Space_def_t *space_def /* I: spatial definition information */
 );
 
 #endif

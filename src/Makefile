@@ -8,31 +8,21 @@ RM = rm -f
 EXTRA = -Wall -g
 
 # Define the include files
-INC = bool.h const.h date.h error_handler.h input.h myhdf.h mystring.h \
-output.h space.h si.h
-INCDIR  = -I. -I$(HDFINC) -I$(HDFEOS_INC) -I$(HDFEOS_GCTPINC) -I$(JPEGINC) -I$(SZIPINC) -I$(ZLIBINC)
+INC = common.h input.h output.h si.h
+INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC)
 NCFLAGS = $(EXTRA) $(INCDIR)
 
 # Define the source code and object files
-SRC = date.c              \
-      error_handler.c     \
-      get_args.c          \
+SRC = get_args.c          \
       input.c             \
       make_spectral_index.c \
-      myhdf.c             \
-      mystring.c          \
       output.c            \
-      space.c             \
-      write_envi_hdr.c    \
       spectral_indices.c
 OBJ = $(SRC:.c=.o)
 
 # Define the object libraries
-LIB   = -L$(HDFLIB) -lmfhdf -ldf -lxdr -L$(JPEGLIB) -ljpeg \
-        -L$(ZLIBLIB) -lz -L$(SZIPLIB) -lsz -lm
-##LIB   = -L$(HDFLIB) -lmfhdf -ldf -lxdr -L$(JPEGLIB) -ljpeg \
-##        -L$(ZLIBLIB) -lz -L$(SZIPLIB)/libsz.a -lm
-EOSLIB = -L$(HDFEOS_LIB) -lhdfeos -L$(HDFEOS_GCTPLIB) -lGctp
+LIB   = -L$(ESPALIB) -l_espa_raw_binary -l_espa_common -L$(XML2LIB) -lxml2 \
+    -lz -lm
 
 # Define the executable
 EXE = spectral_indices
@@ -41,7 +31,7 @@ EXE = spectral_indices
 all: $(EXE)
 
 spectral_indices: $(OBJ) $(INC)
-	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(EOSLIB) $(LIB)
+	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LIB)
 
 install:
 	cp $(EXE) $(BIN)
