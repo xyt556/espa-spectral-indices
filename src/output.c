@@ -31,8 +31,10 @@ Date         Programmer       Reason
 NOTES:
   1. Don't allocate space for buf, since pointers to existing buffers will
      be assigned in the output structure.
-  2. TOA products will have an "toa_" in the product and band name to designate
-     products processed with TOA bands vs. SR bands.
+  2. TOA products will have an "toa_" in the file name and SR products will
+     have an "sr_" in the file name to designate products processed with TOA
+     bands vs. SR bands.  Otherwise the source will be key along with the band
+     name to pull the appropriate band from the XML file.
 ******************************************************************************/
 Output_t *open_output
 (
@@ -155,10 +157,12 @@ Output_t *open_output
         bmeta[ib].short_name[3] = '\0';
         upper_str = upper_case_str (short_si_names[ib]);
         strcat (bmeta[ib].short_name, upper_str);
+        strcpy (bmeta[ib].product, "spectral_indices");
         if (strstr (short_si_names[ib], "toa"))
-            strcpy (bmeta[ib].product, "toa_spectral_indices");
+            strcpy (bmeta[ib].source, "toa_refl");
         else
-            strcpy (bmeta[ib].product, "spectral_indices");
+            strcpy (bmeta[ib].source, "sr_refl");
+        strcpy (bmeta[ib].category, "index");
         bmeta[ib].nlines = this->nlines;
         bmeta[ib].nsamps = this->nsamps;
         bmeta[ib].pixel_size[0] = input->pixsize[0];
@@ -178,7 +182,12 @@ Output_t *open_output
 
         /* Set up the filename with the scene name and band name and open the
            file for write access */
-        sprintf (bmeta[ib].file_name, "%s_%s.img", scene_name, bmeta[ib].name);
+        if (strstr (short_si_names[ib], "toa"))
+            sprintf (bmeta[ib].file_name, "%s_%s.img", scene_name,
+                bmeta[ib].name);
+        else
+            sprintf (bmeta[ib].file_name, "%s_sr_%s.img", scene_name,
+                bmeta[ib].name);
         this->fp_bin[ib] = open_raw_binary (bmeta[ib].file_name, "w");
         if (this->fp_bin[ib] == NULL)
         {

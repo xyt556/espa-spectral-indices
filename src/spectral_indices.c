@@ -33,8 +33,10 @@ NOTES:
      in the previous sentence, based on which indices were actually specified.
   2. Reflectance bands are stored in the buffer as 0=b1, 1=b2, 2=b3, 3=b4,
      4=b5, 5=b7.
-  3. TOA products will have an "toa_" in the product and band name to designate
-     products processed with TOA bands vs. SR bands.
+  3. TOA products will have an "toa_" in the file name and SR products will
+     have an "sr_" in the file name to designate products processed with TOA
+     bands vs. SR bands.  Otherwise the source will be key along with the band
+     name to pull the appropriate band from the XML file.
 ******************************************************************************/
 int main (int argc, char *argv[])
 {
@@ -614,9 +616,7 @@ void usage ()
 
     printf ("\nwhere the following parameters are optional:\n");
     printf ("    -toa: process the TOA reflectance bands instead of the "
-            "surface reflectance bands.  In this case the filenames and band "
-            "names will have an _toa_ to designate that the TOA bands were "
-            "used for processing.\n");
+            "surface reflectance bands.\n");
     printf ("    -ndvi: process the normalized difference vegetation index "
             "(NDVI) product\n");
     printf ("    -evi: process the enhanced vegetation index (EVI) product\n");
