@@ -36,6 +36,9 @@ def logIt (msg, log_handler):
 # History:
 #   Updated on May 9, 2013 by Gail Schmidt, USGS/EROS
 #   Added support for modified SAVI (MSAVI)
+#   Updated on February 13, 2014 by Gail Schmidt, USGS/EROS
+#   Added support for ESPA internal file format
+#   Added support for TOA processing
 #
 # Usage: do_spectral_indices.py --help prints the help message
 ############################################################################
@@ -55,7 +58,7 @@ class SpectralIndices():
     # logged to that file.
     #
     # Inputs:
-    #   sr_infile - name of the input reflectance HDF file to be processed
+    #   xml_infile - name of the input XML file
     #   logfile - name of the logfile for logging information; if None then
     #       the output will be written to stdout
     #   usebin - this specifies if the spectral indices exe resides in the
@@ -67,25 +70,29 @@ class SpectralIndices():
     #     SUCCESS - successful processing
     #
     # Notes:
-    #   1. The script obtains the path of the reflectance file and changes
+    #   1. The script obtains the path of the XML file and changes
     #      directory to that path for running the spectral indices application.
-    #      If the reflectance file directory is not writable, then this script
+    #      If the XML file directory is not writable, then this script
     #      exits with an error.
-    #   2. If the reflectance file is not specified and the information is
+    #   2. If the XML file is not specified and the information is
     #      going to be grabbed from the command line, then it's assumed all
     #      the parameters will be pulled from the command line.
     #######################################################################
-    def runSi (self, sr_infile=None, ndvi=False, ndmi=False, nbr=False, \
-        nbr2=False, savi=False, msavi=False, evi=False, logfile=None, \
+    def runSi (self, xml_infile=None, toa=False, ndvi=False, ndmi=False, \
+        nbr=False, nbr2=False, savi=False, msavi=False, evi=False, \
+        logfile=None, \
         usebin=None):
         # if no parameters were passed then get the info from the
         # command line
-        if sr_infile == None:
-            # get the command line argument for the reflectance file
+        if xml_infile == None:
+            # get the command line argument for the XML file
             parser = OptionParser()
-            parser.add_option ("-i", "--sr_infile", type="string",
-                dest="sr_infile",
-                help="name of reflectance HDF file", metavar="FILE")
+            parser.add_option ("-i", "--xml_infile", type="string",
+                dest="xml_infile",
+                help="name of XML file", metavar="FILE")
+            parser.add_option ("--toa", dest="toa", default=False,
+                action="store_true",
+                help="process TOA bands instead of surface reflectance bands")
             parser.add_option ("--ndvi", dest="ndvi", default=False,
                 action="store_true",
                 help="process NDVI (normalized difference vegetation index")
@@ -118,13 +125,14 @@ class SpectralIndices():
             usebin = options.usebin          # should $BIN directory be used
             logfile = options.logfile        # name of the log file
 
-            # surface reflectance file
-            sr_infile = options.sr_infile
-            if sr_infile == None:
-                parser.error ("missing reflectance input file command-line argument");
+            # XML input file
+            xml_infile = options.xml_infile
+            if xml_infile == None:
+                parser.error ("missing input XML file command-line argument");
                 return ERROR
 
             # spectral indices options
+            toa = options.toa
             ndvi = options.ndvi
             ndmi = options.ndmi
             nbr = options.nbr
@@ -137,7 +145,7 @@ class SpectralIndices():
         log_handler = None
         if logfile != None:
             log_handler = open (logfile, 'w', buffering=1)
-        msg = 'Spectral indices processing of Landsat reflectance file: %s' % sr_infile
+        msg = 'Spectral indices processing of Landsat file: %s' % xml_infile
         logIt (msg, log_handler)
         
         # should we expect the spectral indices application to be in the PATH
@@ -154,35 +162,36 @@ class SpectralIndices():
             msg = 'Spectral indices executable expected to be in the PATH'
             logIt (msg, log_handler)
         
-        # make sure the reflectance file exists
-        if not os.path.isfile(sr_infile):
-            msg = "Error: reflectance file does not exist or is not accessible: " + sr_infile
+        # make sure the XML file exists
+        if not os.path.isfile(xml_infile):
+            msg = "Error: XML file does not exist or is not accessible: " + xml_infile
             logIt (msg, log_handler)
             return ERROR
 
-        # use the base reflectance filename and not the full path.
-        base_reflfile = os.path.basename (sr_infile)
-        msg = 'Processing reflectance file: %s' % base_reflfile
+        # use the base XML filename and not the full path.
+        base_xmlfile = os.path.basename (xml_infile)
+        msg = 'Processing XML file: %s' % base_xmlfile
         logIt (msg, log_handler)
         
-        # get the path of the reflectance file and change directory to that
-        # location for running this script.  save the current working directory
-        # for return to upon error or when processing is complete.  Note: use
+        # get the path of the XML file and change directory to that location
+        # for running this script.  save the current working directory for
+        # return to upon error or when processing is complete.  Note: use
         # abspath to handle the case when the filepath is just the filename
         # and doesn't really include a file path (i.e. the current working
         # directory).
         mydir = os.getcwd()
-        refldir = os.path.dirname (os.path.abspath (sr_infile))
-        if not os.access(refldir, os.W_OK):
-            msg = 'Path of reflectance file is not writable: %s.  Script needs write access to the reflectance directory.' % refldir
+        xmldir = os.path.dirname (os.path.abspath (xml_infile))
+        if not os.access(xmldir, os.W_OK):
+            msg = 'Path of XML file is not writable: %s.  Script needs write access to the XML directory.' % xmldir
             logIt (msg, log_handler)
             return ERROR
-        msg = 'Changing directories for spectral indices processing: %s' % refldir
+        msg = 'Changing directories for spectral indices processing: %s' % xmldir
         logIt (msg, log_handler)
-        os.chdir (refldir)
+        os.chdir (xmldir)
 
         # run spectral indices algorithm, checking the return status.  exit
         # if any errors occur.
+        toa_opt_str = ""
         ndvi_opt_str = ""
         ndmi_opt_str = ""
         nbr_opt_str = ""
@@ -191,6 +200,8 @@ class SpectralIndices():
         msavi_opt_str = ""
         evi_opt_str = ""
 
+        if toa:
+            toa_opt_str = "--toa "
         if ndvi:
             ndvi_opt_str = "--ndvi "
         if ndmi:
@@ -206,7 +217,7 @@ class SpectralIndices():
         if evi:
             evi_opt_str = "--evi "
 
-        cmdstr = "%sspectral_indices --sr=%s %s%s%s%s%s%s%s--verbose" % (bin_dir, sr_infile, ndvi_opt_str, ndmi_opt_str, nbr_opt_str, nbr2_opt_str, savi_opt_str, msavi_opt_str, evi_opt_str)
+        cmdstr = "%sspectral_indices --xml=%s %s%s%s%s%s%s%s--verbose" % (bin_dir, xml_infile, toa_opt_str, ndvi_opt_str, ndmi_opt_str, nbr_opt_str, nbr2_opt_str, savi_opt_str, msavi_opt_str, evi_opt_str)
         print 'DEBUG: spectral_indices command: %s' % cmdstr
         (status, output) = commands.getstatusoutput (cmdstr)
         logIt (output, log_handler)
