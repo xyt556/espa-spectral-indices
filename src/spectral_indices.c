@@ -25,6 +25,8 @@ Date          Programmer       Reason
                                the same output file (NDVI, EVI, SAVI, MSAVI)
 2/13/2014     Gail Schmidt     Modified to utilize the ESPA internal raw
                                binary file format
+3/14/2014     Gail Schmidt     Updated to make sure that at least one spectral
+                               index product was specified for processing
 
 NOTES:
   1. The products are output as {base_scene_name}-{spectral_index_ext}.hdf.
@@ -145,6 +147,14 @@ int main (int argc, char *argv[])
             printf ("yes\n");
         else
             printf ("no\n");
+    }
+
+    if (!ndvi_flag && !ndmi_flag && !nbr_flag && !nbr2_flag && !savi_flag &&
+        !msavi_flag && !evi_flag)
+    {
+        sprintf (errmsg, "No index product was specified for processing.");
+        error_handler (true, FUNC_NAME, errmsg);
+        exit (ERROR);
     }
 
     /* Validate the input metadata file */
