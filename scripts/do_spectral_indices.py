@@ -40,6 +40,10 @@ def logIt (msg, log_handler):
 #   Added support for ESPA internal file format
 #   Added support for TOA processing
 #
+#   Updated on May 9, 2013 by Gail Schmidt, USGS/EROS
+#   Added a check to make sure that at least one of the spectral index products
+#     was specified for processing.  Otherwise don't process.
+#
 # Usage: do_spectral_indices.py --help prints the help message
 ############################################################################
 class SpectralIndices():
@@ -189,6 +193,13 @@ class SpectralIndices():
         logIt (msg, log_handler)
         os.chdir (xmldir)
 
+        # make sure there is something to do
+        if not ndvi and not ndmi and not nbr and not nbr2 and not savi and \
+            not msavi and not evi:
+            msg = "Error: no spectral index product specified to be processed"
+            logIt (msg, log_handler)
+            return ERROR
+
         # run spectral indices algorithm, checking the return status.  exit
         # if any errors occur.
         toa_opt_str = ""
@@ -217,8 +228,11 @@ class SpectralIndices():
         if evi:
             evi_opt_str = "--evi "
 
-        cmdstr = "%sspectral_indices --xml=%s %s%s%s%s%s%s%s--verbose" % (bin_dir, xml_infile, toa_opt_str, ndvi_opt_str, ndmi_opt_str, nbr_opt_str, nbr2_opt_str, savi_opt_str, msavi_opt_str, evi_opt_str)
-        print 'DEBUG: spectral_indices command: %s' % cmdstr
+        cmdstr = "%sspectral_indices --xml=%s %s%s%s%s%s%s%s%s--verbose" % \
+            (bin_dir, xml_infile, toa_opt_str, ndvi_opt_str, ndmi_opt_str, \
+             nbr_opt_str, nbr2_opt_str, savi_opt_str, msavi_opt_str, \
+             evi_opt_str)
+#        print 'DEBUG: spectral_indices command: %s' % cmdstr
         (status, output) = commands.getstatusoutput (cmdstr)
         logIt (output, log_handler)
         exit_code = status >> 8
