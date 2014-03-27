@@ -212,12 +212,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update band info for opening the VI product */
         si_indx[SI_NDVI] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_ndvi");
         else
-            strcpy (short_si_names[num_si], "ndvi");
+            strcpy (short_si_names[num_si], "sr_ndvi");
         strcpy (long_si_names[num_si++],
             "normalized difference vegetation index");
     }
@@ -233,12 +233,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update info for opening the VI product */
         si_indx[SI_EVI] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_evi");
         else
-            strcpy (short_si_names[num_si], "evi");
+            strcpy (short_si_names[num_si], "sr_evi");
         strcpy (long_si_names[num_si++], "enhanced vegetation index");
     }
 
@@ -253,12 +253,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update info for opening the VI product */
         si_indx[SI_NDMI] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_ndmi");
         else
-            strcpy (short_si_names[num_si], "ndmi");
+            strcpy (short_si_names[num_si], "sr_ndmi");
         strcpy (long_si_names[num_si++],
             "normalized difference moisture index");
     }
@@ -274,12 +274,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update info for opening the VI product */
         si_indx[SI_SAVI] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_savi");
         else
-            strcpy (short_si_names[num_si], "savi");
+            strcpy (short_si_names[num_si], "sr_savi");
         strcpy (long_si_names[num_si++], "soil adjusted vegetation index");
     }
 
@@ -294,12 +294,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update info for opening the VI product */
         si_indx[SI_MSAVI] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_msavi");
         else
-            strcpy (short_si_names[num_si], "msavi");
+            strcpy (short_si_names[num_si], "sr_msavi");
         strcpy (long_si_names[num_si++], 
             "modified soil adjusted vegetation index");
     }
@@ -315,12 +315,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update info for opening the VI product */
         si_indx[SI_NBR] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_nbr");
         else
-            strcpy (short_si_names[num_si], "nbr");
+            strcpy (short_si_names[num_si], "sr_nbr");
         strcpy (long_si_names[num_si++], "normalized burn ratio");
     }
 
@@ -335,12 +335,12 @@ int main (int argc, char *argv[])
             exit (ERROR);
         }
 
-        /* update SDS info for opening the VI product */
+        /* update info for opening the VI product */
         si_indx[SI_NBR2] = num_si;
         if (toa_flag)
             strcpy (short_si_names[num_si], "toa_nbr2");
         else
-            strcpy (short_si_names[num_si], "nbr2");
+            strcpy (short_si_names[num_si], "sr_nbr2");
         strcpy (long_si_names[num_si++], "normalized burn ratio 2");
     }
 

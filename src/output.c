@@ -182,12 +182,7 @@ Output_t *open_output
 
         /* Set up the filename with the scene name and band name and open the
            file for write access */
-        if (strstr (short_si_names[ib], "toa"))
-            sprintf (bmeta[ib].file_name, "%s_%s.img", scene_name,
-                bmeta[ib].name);
-        else
-            sprintf (bmeta[ib].file_name, "%s_sr_%s.img", scene_name,
-                bmeta[ib].name);
+        sprintf (bmeta[ib].file_name, "%s_%s.img", scene_name, bmeta[ib].name);
         this->fp_bin[ib] = open_raw_binary (bmeta[ib].file_name, "w");
         if (this->fp_bin[ib] == NULL)
         {
