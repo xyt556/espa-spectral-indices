@@ -155,7 +155,7 @@ void make_savi
 MODULE:  make_modified_savi
 
 PURPOSE:  Computes the soil adjusted vegetation index using the specified input bands.
-MSAVI = (2 * nir + 1) - SQRT (SQR (2 * nir + 1) - (8 * (nir - red))) * L
+MSAVI = (2 * nir + 1 - SQRT (SQR (2 * nir + 1) - (8 * (nir - red)))) * L
 where L is the soil brightness correction factor and a value of 0.5.
 
 RETURN VALUE:
