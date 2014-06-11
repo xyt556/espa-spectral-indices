@@ -22,7 +22,7 @@ OBJ = $(SRC:.c=.o)
 
 # Define the object libraries
 LIB	= -L$(ESPALIB) -l_espa_raw_binary -l_espa_common \
-      -L$(XML2LIB) -lxml2 -L$(JBIGLIB) -ljbig -llzma -lz -lm
+      -L$(XML2LIB) -lxml2 -L$(JBIGLIB) -ljbig -L$(LZMALIB) -llzma -lz -lm
 
 # Define the executable
 EXE = spectral_indices
