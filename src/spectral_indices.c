@@ -158,7 +158,7 @@ int main (int argc, char *argv[])
     }
 
     /* Validate the input metadata file */
-    if (validate_xml_file (xml_infile, ESPA_SCHEMA) != SUCCESS)
+    if (validate_xml_file (xml_infile) != SUCCESS)
     {  /* Error messages already written */
         exit (ERROR);
     }
