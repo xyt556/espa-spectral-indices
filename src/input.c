@@ -25,6 +25,7 @@ Date        Programmer       Reason
                              from the LEDAPS lndsr application)
 2/13/2014   Gail Schmidt     Modified to work with ESPA internal raw binary
                              file format
+10/15/2014  Gail Schmidt     Modified to process Landsat 8 data
 
 NOTES:
   1. This routine opens the input reflectance files.  It also allocates memory
@@ -81,11 +82,22 @@ Input_t *open_input
         this->refl_band[4] = 5;
         this->refl_band[5] = 7;
     }
+    else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+    {
+        this->nrefl_band = 7;     /* number of reflectance bands */
+        this->refl_band[0] = 1;
+        this->refl_band[1] = 2;
+        this->refl_band[2] = 3;
+        this->refl_band[3] = 4;
+        this->refl_band[4] = 5;
+        this->refl_band[5] = 6;
+        this->refl_band[6] = 7;
+    }
     else
     {
         free_input (this);
         sprintf (errmsg, "Unsupported instrument type.  Currently only "
-            "TM and ETM+ are supported");
+            "TM, ETM+, and OLI_TIRS are supported");
         error_handler (true, FUNC_NAME, errmsg);
         return (NULL);
     }
@@ -94,59 +106,129 @@ Input_t *open_input
        Otherwise grab the surface reflectance bands. */
     if (toa)
     {
-        for (ib = 0; ib < metadata->nbands; ib++)
+        if (!strcmp (gmeta->instrument, "TM") ||
+            !strncmp (gmeta->instrument, "ETM", 3))
         {
-            if (!strcmp (metadata->band[ib].name, "toa_band1") &&
-                !strcmp (metadata->band[ib].product, "toa_refl"))
+            for (ib = 0; ib < metadata->nbands; ib++)
             {
-                /* this is the index we'll use for reflectance band info */
-                refl_indx = ib;
-                this->file_name[0] = strdup (metadata->band[ib].file_name);
-            }
-            else if (!strcmp (metadata->band[ib].name, "toa_band2") &&
-                !strcmp (metadata->band[ib].product, "toa_refl"))
-                this->file_name[1] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "toa_band3") &&
-                !strcmp (metadata->band[ib].product, "toa_refl"))
-                this->file_name[2] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "toa_band4") &&
-                !strcmp (metadata->band[ib].product, "toa_refl"))
-                this->file_name[3] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "toa_band5") &&
-                !strcmp (metadata->band[ib].product, "toa_refl"))
-                this->file_name[4] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "toa_band7") &&
-                !strcmp (metadata->band[ib].product, "toa_refl"))
-                this->file_name[5] = strdup (metadata->band[ib].file_name);
-        }  /* for ib */
+                if (!strcmp (metadata->band[ib].name, "toa_band1") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                {
+                    /* this is the index we'll use for reflectance band info */
+                    refl_indx = ib;
+                    this->file_name[0] = strdup (metadata->band[ib].file_name);
+                }
+                else if (!strcmp (metadata->band[ib].name, "toa_band2") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[1] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band3") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[2] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band4") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[3] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band5") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[4] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band7") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[5] = strdup (metadata->band[ib].file_name);
+            }  /* for ib */
+        }
+        else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+        {
+            for (ib = 0; ib < metadata->nbands; ib++)
+            {
+                if (!strcmp (metadata->band[ib].name, "toa_band1") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                {
+                    /* this is the index we'll use for reflectance band info */
+                    refl_indx = ib;
+                    this->file_name[0] = strdup (metadata->band[ib].file_name);
+                }
+                else if (!strcmp (metadata->band[ib].name, "toa_band2") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[1] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band3") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[2] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band4") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[3] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band5") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[4] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band6") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[5] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "toa_band7") &&
+                    !strcmp (metadata->band[ib].product, "toa_refl"))
+                    this->file_name[6] = strdup (metadata->band[ib].file_name);
+            }  /* for ib */
+        }
     }
     else
     {
-        for (ib = 0; ib < metadata->nbands; ib++)
+        if (!strcmp (gmeta->instrument, "TM") ||
+            !strncmp (gmeta->instrument, "ETM", 3))
         {
-            if (!strcmp (metadata->band[ib].name, "sr_band1") &&
-                !strcmp (metadata->band[ib].product, "sr_refl"))
+            for (ib = 0; ib < metadata->nbands; ib++)
             {
-                /* this is the index we'll use for reflectance band info */
-                refl_indx = ib;
-                this->file_name[0] = strdup (metadata->band[ib].file_name);
-            }
-            else if (!strcmp (metadata->band[ib].name, "sr_band2") &&
-                !strcmp (metadata->band[ib].product, "sr_refl"))
-                this->file_name[1] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "sr_band3") &&
-                !strcmp (metadata->band[ib].product, "sr_refl"))
-                this->file_name[2] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "sr_band4") &&
-                !strcmp (metadata->band[ib].product, "sr_refl"))
-                this->file_name[3] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "sr_band5") &&
-                !strcmp (metadata->band[ib].product, "sr_refl"))
-                this->file_name[4] = strdup (metadata->band[ib].file_name);
-            else if (!strcmp (metadata->band[ib].name, "sr_band7") &&
-                !strcmp (metadata->band[ib].product, "sr_refl"))
-                this->file_name[5] = strdup (metadata->band[ib].file_name);
-        }  /* for ib */
+                if (!strcmp (metadata->band[ib].name, "sr_band1") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                {
+                    /* this is the index we'll use for reflectance band info */
+                    refl_indx = ib;
+                    this->file_name[0] = strdup (metadata->band[ib].file_name);
+                }
+                else if (!strcmp (metadata->band[ib].name, "sr_band2") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[1] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band3") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[2] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band4") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[3] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band5") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[4] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band7") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[5] = strdup (metadata->band[ib].file_name);
+            }  /* for ib */
+        }
+        else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+        {
+            for (ib = 0; ib < metadata->nbands; ib++)
+            {
+                if (!strcmp (metadata->band[ib].name, "sr_band1") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                {
+                    /* this is the index we'll use for reflectance band info */
+                    refl_indx = ib;
+                    this->file_name[0] = strdup (metadata->band[ib].file_name);
+                }
+                else if (!strcmp (metadata->band[ib].name, "sr_band2") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[1] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band3") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[2] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band4") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[3] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band5") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[4] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band6") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[5] = strdup (metadata->band[ib].file_name);
+                else if (!strcmp (metadata->band[ib].name, "sr_band7") &&
+                    !strcmp (metadata->band[ib].product, "sr_refl"))
+                    this->file_name[6] = strdup (metadata->band[ib].file_name);
+            }  /* for ib */
+        }
     }
 
     /* Make sure we found the bands */

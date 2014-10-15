@@ -27,6 +27,7 @@ Date          Programmer       Reason
                                binary file format
 3/14/2014     Gail Schmidt     Updated to make sure that at least one spectral
                                index product was specified for processing
+10/15/2014    Gail Schmidt     Modified to support Landsat 8 data
 
 NOTES:
   1. The products are output as {base_scene_name}-{spectral_index_ext}.hdf.
@@ -72,6 +73,11 @@ int main (int argc, char *argv[])
     int num_si;              /* number of spectral index products */
     int si_indx[NUM_SI];     /* index of each of the bands within the spectral
                                 index product */
+    int16 *blue=NULL;        /* blue band index */
+    int16 *red=NULL;         /* red band index */
+    int16 *nir=NULL;         /* NIR band index */
+    int16 *mir=NULL;         /* MIR band index */
+    int16 *swir=NULL;        /* SWIR band index */
     int16 *ndvi=NULL;        /* NDVI values */
     int16 *ndmi=NULL;        /* NDMI values */
     int16 *nbr=NULL;         /* NBR values */
@@ -83,6 +89,7 @@ int main (int argc, char *argv[])
     Output_t *si_output=NULL;   /* output structure and metadata for the
                                    SI products */
     Espa_internal_meta_t xml_metadata;  /* XML metadata structure */
+    Espa_global_meta_t *gmeta = NULL; /* pointer to global meta */
     Envi_header_t envi_hdr;   /* output ENVI header information */
 
     printf ("Starting spectral indices processing ...\n");
@@ -173,6 +180,7 @@ int main (int argc, char *argv[])
     {  /* Error messages already written */
         exit (ERROR);
     }
+    gmeta = &xml_metadata.global;
 
     /* Open the reflectance product, set up the input data structure, and
        allocate memory for the data buffers */
@@ -400,10 +408,21 @@ int main (int argc, char *argv[])
            NDVI = (nir - red) / (nir + red) */
         if (ndvi_flag)
         {
-            make_spectral_index (refl_input->refl_buf[3] /*b4*/,
-                refl_input->refl_buf[2] /*b3*/, refl_input->refl_fill,
-                refl_input->refl_saturate_val, nlines_proc, refl_input->nsamps,
-                ndvi);
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                nir = refl_input->refl_buf[3];  /* b4 */
+                red = refl_input->refl_buf[2];  /* b3 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                nir = refl_input->refl_buf[4];  /* b5 */
+                red = refl_input->refl_buf[3];  /* b4 */
+            }
+
+            make_spectral_index (nir, red, refl_input->refl_fill,
+                refl_input->refl_saturate_val, nlines_proc,
+                refl_input->nsamps, ndvi);
 
             if (put_output_line (si_output, ndvi, si_indx[SI_NDVI], line,
                 nlines_proc) != SUCCESS)
@@ -418,11 +437,23 @@ int main (int argc, char *argv[])
            EVI = (nir - red) / (nir + C1 * red - C2 * blue + L) */
         if (evi_flag)
         {
-            make_evi (refl_input->refl_buf[3] /*b4*/,
-                refl_input->refl_buf[2] /*b3*/, refl_input->refl_buf[0] /*b1*/,
-                refl_input->refl_scale_fact, refl_input->refl_fill,
-                refl_input->refl_saturate_val, nlines_proc, refl_input->nsamps,
-                evi);
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                nir = refl_input->refl_buf[3];  /* b4 */
+                red = refl_input->refl_buf[2];  /* b3 */
+                blue = refl_input->refl_buf[0]; /* b1 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                nir = refl_input->refl_buf[4];  /* b5 */
+                red = refl_input->refl_buf[3];  /* b4 */
+                blue = refl_input->refl_buf[1]; /* b2 */
+            }
+
+            make_evi (nir, red, blue, refl_input->refl_scale_fact,
+                refl_input->refl_fill, refl_input->refl_saturate_val,
+                nlines_proc, refl_input->nsamps, evi);
 
             if (put_output_line (si_output, evi, si_indx[SI_EVI], line,
                 nlines_proc) != SUCCESS)
@@ -438,8 +469,19 @@ int main (int argc, char *argv[])
            constant 0.5. */
         if (savi_flag)
         {
-            make_savi (refl_input->refl_buf[3] /*b4*/,
-                refl_input->refl_buf[2] /*b3*/, refl_input->refl_scale_fact,
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                nir = refl_input->refl_buf[3];  /* b4 */
+                red = refl_input->refl_buf[2];  /* b3 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                nir = refl_input->refl_buf[4];  /* b5 */
+                red = refl_input->refl_buf[3];  /* b4 */
+            }
+
+            make_savi (nir, red, refl_input->refl_scale_fact,
                 refl_input->refl_fill, refl_input->refl_saturate_val,
                 nlines_proc, refl_input->nsamps, savi);
 
@@ -458,8 +500,19 @@ int main (int argc, char *argv[])
            where L is the soil brightness correction factor of 0.5*/
         if (msavi_flag)
         {
-            make_modified_savi (refl_input->refl_buf[3] /*b4*/,
-                refl_input->refl_buf[2] /*b3*/, refl_input->refl_scale_fact,
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                nir = refl_input->refl_buf[3];  /* b4 */
+                red = refl_input->refl_buf[2];  /* b3 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                nir = refl_input->refl_buf[4];  /* b5 */
+                red = refl_input->refl_buf[3];  /* b4 */
+            }
+
+            make_modified_savi (nir, red, refl_input->refl_scale_fact,
                 refl_input->refl_fill, refl_input->refl_saturate_val,
                 nlines_proc, refl_input->nsamps, msavi);
 
@@ -476,10 +529,21 @@ int main (int argc, char *argv[])
            NDMI = (nir - mir) / (nir + mir) */
         if (ndmi_flag)
         {
-            make_spectral_index (refl_input->refl_buf[3] /*b4*/,
-                refl_input->refl_buf[4] /*b5*/, refl_input->refl_fill,
-                refl_input->refl_saturate_val, nlines_proc, refl_input->nsamps,
-                ndmi);
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                nir = refl_input->refl_buf[3];  /* b4 */
+                mir = refl_input->refl_buf[4];  /* b5 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                nir = refl_input->refl_buf[4];  /* b5 */
+                mir = refl_input->refl_buf[5];  /* b6 */
+            }
+
+            make_spectral_index (nir, mir, refl_input->refl_fill,
+                refl_input->refl_saturate_val, nlines_proc,
+                refl_input->nsamps, ndmi);
 
             if (put_output_line (si_output, ndmi, si_indx[SI_NDMI], line,
                 nlines_proc) != SUCCESS)
@@ -494,10 +558,21 @@ int main (int argc, char *argv[])
            NBR = (nir - swir) / (nir + swir) */
         if (nbr_flag)
         {
-            make_spectral_index (refl_input->refl_buf[3] /*b4*/,
-                refl_input->refl_buf[5] /*b7*/, refl_input->refl_fill,
-                refl_input->refl_saturate_val, nlines_proc, refl_input->nsamps,
-                nbr);
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                nir = refl_input->refl_buf[3];  /* b4 */
+                swir = refl_input->refl_buf[5]; /* b7 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                nir = refl_input->refl_buf[4];  /* b5 */
+                swir = refl_input->refl_buf[6]; /* b7 */
+            }
+
+            make_spectral_index (nir, swir, refl_input->refl_fill,
+                refl_input->refl_saturate_val, nlines_proc,
+                refl_input->nsamps, nbr);
 
             if (put_output_line (si_output, nbr, si_indx[SI_NBR], line,
                 nlines_proc) != SUCCESS)
@@ -512,10 +587,21 @@ int main (int argc, char *argv[])
            NBR2 = (mir - swir) / (mir + swir) */
         if (nbr2_flag)
         {
-            make_spectral_index (refl_input->refl_buf[4] /*b5*/,
-                refl_input->refl_buf[5] /*b7*/, refl_input->refl_fill,
-                refl_input->refl_saturate_val, nlines_proc, refl_input->nsamps,
-                nbr2);
+            if (!strcmp (gmeta->instrument, "TM") ||
+                !strncmp (gmeta->instrument, "ETM", 3))
+            {
+                mir = refl_input->refl_buf[4];  /* b5 */
+                swir = refl_input->refl_buf[5]; /* b7 */
+            }
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            {
+                mir = refl_input->refl_buf[5];  /* b6 */
+                swir = refl_input->refl_buf[6]; /* b7 */
+            }
+
+            make_spectral_index (mir, swir, refl_input->refl_fill,
+                refl_input->refl_saturate_val, nlines_proc,
+                refl_input->nsamps, nbr2);
 
             if (put_output_line (si_output, nbr2, si_indx[SI_NBR2], line,
                 nlines_proc) != SUCCESS)

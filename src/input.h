@@ -10,9 +10,9 @@
 #include "raw_binary_io.h"
 #include "espa_metadata.h"
 
-/* There are currently a maximum of 6 reflective bands in the output surface
-   reflectance product */
-#define NBAND_REFL_MAX 6
+/* There are currently a maximum of 7 reflective bands (Landsat 8 has 7,
+   Landsats 4-7 have 6) in the output surface reflectance product */
+#define NBAND_REFL_MAX 7
 
 /* Structure for the 'input' data type, particularly to handle the file/SDS
    IDs and the band-specific information */
