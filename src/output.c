@@ -27,6 +27,9 @@ Date         Programmer       Reason
                               from the LEDAPS lndsr application)
 2/14/2014    Gail Schmidt     Modified to work with ESPA internal raw binary
                               file format
+12/10/2014   Gail Schmidt     In the event that the TOA band1 doesn't exist,
+                              which may be the case of SR-only products are
+                              being processed, then use the SR band1.
 
 NOTES:
   1. Don't allocate space for buf, since pointers to existing buffers will
@@ -85,6 +88,13 @@ Output_t *open_output
         if (!strcmp (in_meta->band[ib].name, "toa_band1") &&
             !strcmp (in_meta->band[ib].product, "toa_refl"))
         {
+            /* this is the index we'll use for reflectance band info */
+            refl_indx = ib;
+            break;
+        }
+        else if (!strcmp (in_meta->band[ib].name, "sr_band1") &&
+                 !strcmp (in_meta->band[ib].product, "sr_refl"))
+        { /* check for SR band1 if TOA band1 doesn't exist */
             /* this is the index we'll use for reflectance band info */
             refl_indx = ib;
             break;

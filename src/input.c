@@ -25,7 +25,8 @@ Date        Programmer       Reason
                              from the LEDAPS lndsr application)
 2/13/2014   Gail Schmidt     Modified to work with ESPA internal raw binary
                              file format
-10/15/2014  Gail Schmidt     Modified to process Landsat 8 data
+10/15/2014  Gail Schmidt     Modified to process Landsat 8 data (OLI and
+                             OLI_TIRS)
 
 NOTES:
   1. This routine opens the input reflectance files.  It also allocates memory
@@ -82,7 +83,8 @@ Input_t *open_input
         this->refl_band[4] = 5;
         this->refl_band[5] = 7;
     }
-    else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+    else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+             !strcmp (gmeta->instrument, "OLI"))
     {
         this->nrefl_band = 7;     /* number of reflectance bands */
         this->refl_band[0] = 1;
@@ -97,7 +99,7 @@ Input_t *open_input
     {
         free_input (this);
         sprintf (errmsg, "Unsupported instrument type.  Currently only "
-            "TM, ETM+, and OLI_TIRS are supported");
+            "TM, ETM+, OLI, and OLI_TIRS are supported");
         error_handler (true, FUNC_NAME, errmsg);
         return (NULL);
     }
@@ -135,7 +137,8 @@ Input_t *open_input
                     this->file_name[5] = strdup (metadata->band[ib].file_name);
             }  /* for ib */
         }
-        else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+        else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                 !strcmp (gmeta->instrument, "OLI"))
         {
             for (ib = 0; ib < metadata->nbands; ib++)
             {
@@ -198,7 +201,8 @@ Input_t *open_input
                     this->file_name[5] = strdup (metadata->band[ib].file_name);
             }  /* for ib */
         }
-        else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+        else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                 !strcmp (gmeta->instrument, "OLI"))
         {
             for (ib = 0; ib < metadata->nbands; ib++)
             {

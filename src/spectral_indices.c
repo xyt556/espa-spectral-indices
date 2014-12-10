@@ -27,7 +27,8 @@ Date          Programmer       Reason
                                binary file format
 3/14/2014     Gail Schmidt     Updated to make sure that at least one spectral
                                index product was specified for processing
-10/15/2014    Gail Schmidt     Modified to support Landsat 8 data
+10/15/2014    Gail Schmidt     Modified to support Landsat 8 data (OLI and
+                               OLI_TIRS)
 
 NOTES:
   1. The products are output as {base_scene_name}-{spectral_index_ext}.hdf.
@@ -414,7 +415,8 @@ int main (int argc, char *argv[])
                 nir = refl_input->refl_buf[3];  /* b4 */
                 red = refl_input->refl_buf[2];  /* b3 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 nir = refl_input->refl_buf[4];  /* b5 */
                 red = refl_input->refl_buf[3];  /* b4 */
@@ -444,7 +446,8 @@ int main (int argc, char *argv[])
                 red = refl_input->refl_buf[2];  /* b3 */
                 blue = refl_input->refl_buf[0]; /* b1 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 nir = refl_input->refl_buf[4];  /* b5 */
                 red = refl_input->refl_buf[3];  /* b4 */
@@ -475,7 +478,8 @@ int main (int argc, char *argv[])
                 nir = refl_input->refl_buf[3];  /* b4 */
                 red = refl_input->refl_buf[2];  /* b3 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 nir = refl_input->refl_buf[4];  /* b5 */
                 red = refl_input->refl_buf[3];  /* b4 */
@@ -506,7 +510,8 @@ int main (int argc, char *argv[])
                 nir = refl_input->refl_buf[3];  /* b4 */
                 red = refl_input->refl_buf[2];  /* b3 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 nir = refl_input->refl_buf[4];  /* b5 */
                 red = refl_input->refl_buf[3];  /* b4 */
@@ -535,7 +540,8 @@ int main (int argc, char *argv[])
                 nir = refl_input->refl_buf[3];  /* b4 */
                 mir = refl_input->refl_buf[4];  /* b5 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 nir = refl_input->refl_buf[4];  /* b5 */
                 mir = refl_input->refl_buf[5];  /* b6 */
@@ -564,7 +570,8 @@ int main (int argc, char *argv[])
                 nir = refl_input->refl_buf[3];  /* b4 */
                 swir = refl_input->refl_buf[5]; /* b7 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 nir = refl_input->refl_buf[4];  /* b5 */
                 swir = refl_input->refl_buf[6]; /* b7 */
@@ -593,7 +600,8 @@ int main (int argc, char *argv[])
                 mir = refl_input->refl_buf[4];  /* b5 */
                 swir = refl_input->refl_buf[5]; /* b7 */
             }
-            else if (!strcmp (gmeta->instrument, "OLI_TIRS"))
+            else if (!strcmp (gmeta->instrument, "OLI_TIRS") ||
+                     !strcmp (gmeta->instrument, "OLI"))
             {
                 mir = refl_input->refl_buf[5];  /* b6 */
                 swir = refl_input->refl_buf[6]; /* b7 */
