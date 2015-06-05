@@ -38,7 +38,7 @@ make install
 make clean
 ```
 
-  * Test - Download Landsat surface reflectance products or top of atmosphere products from ESPA.  Then run the spectral_indices binary or do_spectral_indices.py script.  User information is available via the --help command-line argument.
+  * Test - Download Landsat surface reflectance products or top of atmosphere products from ESPA.  Then run the spectral\_indices binary or do\_spectral\_indices.py script.  User information is available via the --help command-line argument.
 ```
 spectral_indices --help
 do_spectral_indices.py --help
