@@ -24,28 +24,27 @@ Spectral Indices source code
 See git tag [version_2.1.0]
 
 ### Installation
-  1. Install dependent libraries - ESPA product formatter (https://github.com/USGS-EROS/espa-product-formatter)
-  2. Set up environment variables.  Can create an environment shell file or add the following to your bash shell.  For C shell, use 'setenv VAR "directory"'.
+  * Install dependent libraries - ESPA product formatter (https://github.com/USGS-EROS/espa-product-formatter)
+  * Set up environment variables.  Can create an environment shell file or add the following to your bash shell.  For C shell, use 'setenv VAR "directory"'.
 ```
     export PREFIX="path_to_directory_for_spectral_indices_build_data"
 ```
 
-  3. Download (from Github USGS-EROS spectral-indices project) and install source files
+  * Download (from Github USGS-EROS spectral-indices project) and install source files. The following build will create an executable file under $PREFIX/bin: spectral_indices (tested in Linux with the gcc compiler). It will also copy the Python scripts for running spectral indices from the scripts directory up the the $PREFIX/bin directory.
 ```
 cd src
 make
 make install
 make clean
 ```
-This will create an executable file under $PREFIX/bin: spectral_indices (tested in Linux with the gcc compiler). It will also copy the Python scripts for running spectral indices from the scripts directory up the the $PREFIX/bin directory.
 
-  4. Test - Download Landsat surface reflectance products or top of atmosphere products from ESPA.  Then run the spectral_indices binary or do_spectral_indices.py script.  User information is available via the --help command-line argument.
+  * Test - Download Landsat surface reflectance products or top of atmosphere products from ESPA.  Then run the spectral_indices binary or do_spectral_indices.py script.  User information is available via the --help command-line argument.
 ```
 spectral_indices --help
 do_spectral_indices.py --help
 ```
 
-  5. Check output - There will be a separate ESPA file generated for each of the spectral index products specified on the command line.  In addition each band should be added to the input XML file.
+  * Check output - There will be a separate ESPA file generated for each of the spectral index products specified on the command line.  In addition each band should be added to the input XML file.
 ```
 {scene_name}_ndvi.bin
 {scene_name}_ndmi.bin
