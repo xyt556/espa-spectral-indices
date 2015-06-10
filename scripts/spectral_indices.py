@@ -2,27 +2,20 @@
 '''
 -----     -----     -----     -----     -----     -----
 @author: ngenetzky@usgs.gov
-Classes:
+LICENSE: NASA Open Source Agreement 1.3
+CLASSES:
     Cmd
     ScriptHelper
     SI : Spectral Indices
-    SWE : Surface Water Extent
-Required Executable:
-LICENSE: NASA Open Source Agreement 1.3
 
-DSWE    :    Spectral Indices
-    FILE: do_dynamic_surface_water_extent.py
-    PURPOSE: Master script for running scene-based surface water algorithm.
-    USAGE: See 'do_dynamic_surface_water_extent.py --help'
-    DEPENDENCIES: dswe
-SI    :    Surface Water Extent
-    FILE: do_dynamic_surface_water_extent.py
+SI    :    Spectral Indices
+    FILE: spectral_indices.py
+    SOURCE: https://github.com/USGS-EROS/espa-spectral-indices
     PURPOSE: Master script for running scene-based surface water algorithm.
     USAGE: See 'do_dynamic_surface_water_extent.py --help
     DEPENDENCIES: spectral_indices
 -----     -----     -----     -----     -----     -----
 '''
-
 import sys
 import os
 import argparse
@@ -44,22 +37,25 @@ class Cmd:
     By using this class with each script it ensures consistency in
     the way that that command line is produced.
     Usage:
-    # __init__(SCRIPTNAME, DIRECTORY)
-    cmdScript = Cmd('my_script_name')
-    # addParam(PARAMERTER_NAME,PARAMETER_VALUE)
-    cmdScript.addParam('xml', my_xml.xml)
-    # Will use commands.getstatusoutput to execute built cmd-line
-    cmdScript.execute()
+        # __init__(SCRIPTNAME, DIRECTORY)
+        cmdScript = Cmd('my_script_name')
+        # addParam(PARAMERTER_NAME,PARAMETER_VALUE)
+        cmdScript.addParam('xml', my_xml.xml)
+        # Will use commands.getstatusoutput to execute built cmd-line
+        cmdScript.execute()
     """
-    # Script Names
+
     def __init__(self, script_name, basedir=''):
+        'Cmd object must know location and name of script'
         self.cmdline = [basedir+script_name]
 
-    def addParam(self, name, arg1=''):
+    def addParam(self, name, *args):
+        'Allows parameter to be named as well as a list of arguments'
         self.cmdline.append(name)
-        self.cmdline.append(arg1)
+        self.cmdline.append(' '.join(args))
 
     def getCmdline(self):
+        'Combines the script name (and path) with the arguments'
         return ' '.join(self.cmdline)
 
     def execute(self):
@@ -84,6 +80,12 @@ class Cmd:
             if len(output) > 0:
                 message = ' Stdout/Stderr is: '.join([message, output])
             raise Exception(message)
+        if os.WEXITSTATUS(status) != 0:
+            message = "Application [%s] returned error code [%d]" \
+                      % (cmd, os.WEXITSTATUS(status))
+            if len(output) > 0:
+                message = ' Stdout/Stderr is: '.join([message, output])
+            raise Exception(message)
         return output
 
 
@@ -91,55 +93,27 @@ class ScriptHelper:
     '''
     General functions and properties inherent to all scripts.
     Should never be directly instantiated, but instead should
-    ...be a base class for other script classes.
-    ---Methods---
-    main(): The actions that every script must perform to execute.
-    isLansat8(): Looks at the XML file to determine if the satellite is L8.
-    _getLogger(): Obtain Logger object from 'logging' module
-    SUCCESS(): Constant to define value of "Success". (Set to 1)
-    FAILURE(): Constant to define value of "Failure". (Set to 0)
-    getBINdir(): Returns the environment variable bin. Assumed to be a path
-                to the BIN directory
-    parseCommonArgs(): Allows common arguments to be added to the parser.
-                    Any of the following can be specified:
-                    xml, debug and verbose. default is None.
-    checkCommonPreReq(): Checks conditions that must be true for any script.
-                        Not required that each sub class uses them.
-    get_execute_header(): Defines the String that will appear in the log
-                        when execute() is called.
-    parse_arguments(): SubClass should implement. Should obtain any command
-                    line arguments. Should use argparse module.
-    check_prereq(): SubClass should implement. Should check conditions that
-                    must be for the script to execute.
-    build_cmd_line(): SubClass should implement.
+    be a base class for other script classes.
     '''
     # Possible future additions:
     # 1. Allow use of use BIN env. variable as the location of executable.
     # 2. Allow a log file to be specified.
-    ARG_XML = (['var', 'xml_filename'],
-               ['help', 'The XML metadata file to use'],
-               ['short', 'f'],
-               ['long', 'xml'])
-
+    # 3. Create a more robust getConfigFromXml to replace "is_landsat8()"
     def __init__(self):
-        self.logger = ScriptHelper._getLogger()
+        '''
+        A valid script should have a title, of its module, and exe_filename,
+        which should be the name of the executable. Logger is from logging.
+        args and cmd will be defined by parse_arguments and build_cmd_line.
+        '''
+        self.logger = ScriptHelper._get_logger()
         self.args = None
         self.cmd = None
         # Should be defined by sub-class
         self.title = 'Title Not Defined'
         self.exe_filename = 'Program Name not defined'
 
-    def main(self):
-        script.parse_arguments()
-        if(script.check_prereq()):
-            script.build_cmd_line()
-            script.execute()
-            sys.exit(ScriptHelper.SUCCESS())
-        else:
-            sys.exit(ScriptHelper.FAILURE())
-
     @staticmethod
-    def isLansat8(xml_filename):
+    def is_landsat8(xml_filename):
         '''
         Reads XML file for satellite and instrument type and determines
         the configuration. Expects the following contents in the xml:
@@ -161,12 +135,11 @@ class ScriptHelper:
             return False
 
     @staticmethod
-    def getConfigFromXml(xml_filename):
-        return "Not Implemented"
-
-    @staticmethod
-    def _getLogger():
-        # setup the default logger format and level. log to STDOUT.
+    def _get_logger():
+        '''
+        Obtain Logger object from logging module.
+        setup the default logger format and level. log to STDOUT.
+        '''
         logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
                                     ' %(levelname)-8s'
                                     ' %(filename)s:%(lineno)d:'
@@ -178,24 +151,19 @@ class ScriptHelper:
         return logger
 
     @staticmethod
-    def SUCCESS():
-        return 1
-
-    @staticmethod
-    def FAILURE():
-        return 0
-
-    @staticmethod
-    def getBINdir():
-        # get the BIN dir environment variable
+    def get_bin_dir():
+        'Returns the BIN dir environment variable.'
         bin_dir = os.environ.get('BIN')
         bin_dir = bin_dir + '/'
-        # msg = 'BIN environment variable: %s' % bin_dir
-        # logIt (msg, log_handler)
         return bin_dir
 
     @staticmethod
-    def parseCommonArgs(parser, xml=False, debug=False, verbose=False):
+    def parse_common_args(parser, xml=False, debug=False, verbose=False):
+        '''
+        Allows common arguments to be added to the parser.
+        Any of the following can be specified: xml, debug and verbose.
+        Default is None.
+        '''
         if(xml):
             parser.add_argument('--xml', action='store',
                                 dest='xml_filename', required=True,
@@ -214,18 +182,27 @@ class ScriptHelper:
                                       be printed? (default value is False)"))
         return parser
 
-    def checkCommonPreReq(self):
-        # Verify that the XML filename provided is not an empty string
-        if self.args.xml_filename == '':
-            self.logger.fatal("No XML metadata filename provided.")
-            self.logger.fatal("Error processing LST.     \
-                               Processing will terminate.")
-            sys.exit(self.FAILURE())
+    def check_common_prereq(self, checkXml=True):
+        '''
+        Checks conditions that must be true for any script.
+        Not required that each sub class uses any of them.
+        '''
+        if checkXml:
+            # Verify that the XML filename provided is not an empty string
+            if self.args.xml_filename == '':
+                self.logger.fatal("\n\tNo XML metadata filename provided.")
+                self.logger.fatal("\n\tError processing LST.     \
+                                   Processing will terminate.")
+                sys.exit(self.FAILURE())
+        return True
 
     def get_execute_header(self):
-        return '''
-        {0} is processing Landsat data associated with xml file ({1}). \
-        Using the command line:{2}
+        '''
+        Defines the String that will appear in the log
+        when execute() is called.
+        '''
+        return '''{0} is processing Landsat data associated with xml file ({1}). \
+Using the command line:{2}
         ''' .format(self.title,
                     self.args.xml_filename,
                     self.cmd.getCmdline()
@@ -233,68 +210,33 @@ class ScriptHelper:
 
     def execute(self):
         header = self.get_execute_header()
-        self.logger.info(header)
-        print(header)
+        self.logger.info('\n\t'+header)
+        # print(header)
         output = ''
         try:
             output = self.cmd.execute()
         except Exception:
-            self.logger.exception("Error running {0}.                  \
+            self.logger.exception("\n\tError running {0}.                  \
                                   Processing will terminate."
                                   .format(self.title))
             sys.exit(ScriptHelper.FAILURE())
         finally:
             if len(output) > 0:
-                self.logger.info("STDOUT/STDERR Follows: {0}".format(output))
-        self.logger.info("Completion of {0}".format(self.title))
+                self.logger.info("\n\tSTDOUT/STDERR Follows: \
+                                 {0}".format(output))
+        self.logger.info("\n\tCompletion of {0}".format(self.title))
 
-    # Not Implemented.
-    def parse_arguments(self):
+    def parse_arguments(self):  # SubClass should implement.
+        'Should parse command line arguments using argparse module.'
         pass
 
-    def check_prereq(self):
+    def check_prereq(self):  # SubClass should implement.
+        'Should check conditions that must be for the script to execute.'
         return True
 
-    def build_cmd_line(self):
-        '''Sub classes'''
+    def build_cmd_line(self):  # SubClass should implement.
+        'Should use Cmd to build a command line argument.'
         pass
-
-
-class SWE(ScriptHelper):
-
-    def __init__(self):
-        ScriptHelper.__init__(self)
-        self.exe_filename = 'dswe'
-        self.title = 'Surface Water Extent'
-        self.description = ("Build the command line and then kick-off the \
-                            Dynamic Surface Water Extent application")
-
-    def parse_arguments(self):
-        # Create a command line argument parser
-        parser = argparse.ArgumentParser(description=self.description)
-        # Required parameters
-        parser = ScriptHelper.parseCommonArgs(parser, xml=True)
-        parser.add_argument('--dem',
-                            action='store', dest='dem_filename', required=True,
-                            help="The DEM metadata file to use")
-        # Additional parameters
-        parser.add_argument('--verbose',
-                            action='store_true', dest='verbose', default=False,
-                            help=("Should intermediate messages be printed?"
-                                  " (default value is False)"))
-        # Common args
-        parser = ScriptHelper.parseCommonArgs(parser,
-                                              debug=True, verbose=False)
-
-        # Parse the command line parameters
-        self.args = parser.parse_args()
-
-    def build_cmd_line(self):
-        self.cmd = Cmd(self.exe_filename)
-        self.cmd.addParam("--xml", self.args.xml_filename)
-        self.cmd.addParam("--dem", self.args.dem_filename)
-        if self.args.verbose:
-            self.cmd.addParam("--verbose")
 
 
 class SI(ScriptHelper):
@@ -306,16 +248,16 @@ class SI(ScriptHelper):
         self.title = 'Spectral Indices'
         self.description = ('''
         spectral_indices produces the desired spectral index products for the
-         input surface reflectance or TOA reflectance bands. The options
-         include: NDVI, EVI, SAVI, MSAVI, NDMI (also known as NDWI or NDII),
-         NBR, and NBR2. The user may specify one, some, or all of the
-         supported indices for output.''')
+        input surface reflectance or TOA reflectance bands. The options
+        include: NDVI, EVI, SAVI, MSAVI, NDMI (also known as NDWI or NDII),
+        NBR, and NBR2. The user may specify one, some, or all of the
+        supported indices for output.''')
 
     def parse_arguments(self):
-        # Create a command line argument parser
+        'Create a command line argument parser. Accept arguments from cmdline.'
         parser = argparse.ArgumentParser(description=self.description)
         # Required parameters
-        parser = ScriptHelper.parseCommonArgs(parser, xml=True)
+        parser = ScriptHelper.parse_common_args(parser, xml=True)
         # Additional parameters
         parser.add_argument("--toa", dest="toa", default=False,
                             action="store_true",
@@ -350,12 +292,13 @@ class SI(ScriptHelper):
                             help="process EVI                    \
                             (enhanced vegetation index")
         # Common command line arguments
-        parser = ScriptHelper.parseCommonArgs(parser,
-                                              debug=False, verbose=True)
+        parser = ScriptHelper.parse_common_args(parser,
+                                                debug=False, verbose=True)
         # Parse the command line parameters
         self.args = parser.parse_args()
 
     def check_prereq(self):
+        'Checks conditions that should be true in order execute script'
         # make sure there is something to do
         if (not self.args.ndvi and not
                 self.args.ndmi and not
@@ -364,13 +307,14 @@ class SI(ScriptHelper):
                 self.args.savi and not
                 self.args.msavi and not
                 self.args.evi):
-            self.logger.error("Error:no spectral index product"
+            self.logger.error("\n\tError:no spectral index product"
                               "specified to be processed")
             return False
         else:
             return True
 
     def build_cmd_line(self):
+        'Builds a Cmd object that can be executed to run the executable.'
         self.cmd = Cmd(self.exe_filename)
         self.cmd.addParam("--xml", self.args.xml_filename)
 
@@ -394,20 +338,13 @@ class SI(ScriptHelper):
             self.cmd.addParam("--evi")
 
 if __name__ == '__main__':
-    MyFileName = os.path.basename(__file__)
-    print(MyFileName+"::"+"__main__")
-    if(MyFileName in ['spectral_indicies.py', 'si.py']):
-        script = SI()
-    elif(MyFileName in ['surface_water_extent.py', 'dswe.py', 'swe.py']):
-        script = SWE()
-    else:
-        script = SI()
-
+    script = SI()
     script.parse_arguments()
     if(script.check_prereq()):
         script.build_cmd_line()
         script.execute()
-        sys.exit(ScriptHelper.SUCCESS())
+        sys.exit(0)
     else:
-        sys.exit(ScriptHelper.FAILURE())
+        sys.exit(1)
+
 
