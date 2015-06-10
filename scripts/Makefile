@@ -8,7 +8,7 @@ all:
 
 install:
 	install -d $(PREFIX)/bin
-	install -m 755 spectral_indicies.py $(PREFIX)/bin
+	install -m 755 spectral_indices.py $(PREFIX)/bin
 
 clean:
 
