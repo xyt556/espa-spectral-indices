@@ -20,6 +20,7 @@ SI    :    Spectral Indices
     Description:
 -----     -----     -----     -----     -----     -----     -----     -----
 '''
+
 import sys
 import os
 import argparse
@@ -197,9 +198,9 @@ class ScriptHelper:
         Raises:
             NotImplementedError('INVALID_SATELLITE_XML')
         '''
-        if config['satellite'] is 'LANSAT_8':
+        if config['satellite'] is 'LANDSAT_8':
             return True
-        elif config['satellite'] in ['LANSAT_4', 'LANSAT_5', 'LANSAT_7']:
+        elif config['satellite'] in ['LANDSAT_4', 'LANDSAT_5', 'LANDSAT_7']:
             return False
         else:
             raise NotImplementedError('INVALID_SATELLITE_XML')
@@ -307,9 +308,9 @@ class ScriptHelper:
         output = self.cmd.execute()
 
         if len(output) > 0:
-            script.logger.info("STDOUT/STDERR Follows:"
-                               "{0}".format(output))
-        script.logger.info("Completion of {0}".format(script.title))
+            self.logger.info("STDOUT/STDERR Follows:"
+                             "{0}".format(output))
+        self.logger.info("Completion of {0}".format(self.title))
 
     def parse_arguments(self):  # SubClass should implement.
         '''Should parse command line arguments using argparse module.
@@ -382,30 +383,30 @@ class ScriptHelper:
         if e_type is ValueError:
             if(e.args[0] == 'NO_ACTION_REQUESTED'):
                 exit_with_error()  # NO_ACTION_REQUESTED
-            elif(e.args[0] == 'CANT_OPEN_FILE'):
-                if(e.args[1] == 'CANT_READ_XML'):
-                    logger.fatal("Error: XML file ({1})does not exist or is"
-                                 "not accessible.".format(e.args[1]))
-                exit_with_error()  # INVALID_XML
+            elif(e.args[0] == 'INVALID_FILE'):
+                self.logger.fatal("Error: {0} file ({1}) does not exist or is"
+                                  "not accessible.".format(e.args[1],
+                                                           e.args[2]))
+                exit_with_error()  # INVALID_FILE
 
             elif(e.args[0] == 'INVALID_FILE_PARAM'):
-                logger.error("Error: Expecting file parameter of format ({0})"
-                             " but found ({1})".format(e.args[1]), e.args[2])
-                exit_with_error()  # INVALID_FILE_PARAM
+                self.logger.error("Error: Expecting file parameter of format"
+                                  " ({0}) but found ({1})".format(e.args[1],
+                                                                  e.args[2]))
 
         elif e_type is NotImplementedError:
             if(e.args[0] == 'INVALID_SATELLITE_XML'):
-                logger.fatal("Error: XML specifies invalid satellite")
+                self.logger.fatal("Error: XML specifies invalid satellite")
                 exit_with_error()  # INVALID_SATELLITE_XML
 
             elif(e.args[0] == 'INVALID_SUBCLASS'):
-                logger.fatal("Script Helper was improperly subclassed")
+                self.logger.fatal("Script Helper was improperly subclassed")
                 exit_with_error()  # INVALID_SUBCLASS
 
         else:
             if(e.args[0] == 'MISSING_ENV_VARIABLE'):
-                logger.fatal("Error: Missing environment Variable")
-                exit_with_error()  # INVALID_SATELLITE_XML
+                self.logger.fatal("Error: Missing environment Variable")
+                exit_with_error()  # MISSING_ENV_VARIABLE
 
         return False
 
@@ -445,27 +446,27 @@ class SI(ScriptHelper):
         parser.add_argument("--toa", dest="toa", default=False,
                             action="store_true",
                             help="process TOA bands"
-                                 "instead of surface reflectance bands")
+                                 " instead of surface reflectance bands")
 
         parser.add_argument("--ndvi", dest="ndvi", default=False,
                             action="store_true",
                             help="process NDVI"
-                                 "(normalized difference vegetation index")
+                                 "(normalized difference vegetation index)")
 
         parser.add_argument("--ndmi", dest="ndmi", default=False,
                             action="store_true",
                             help="process NDMI"
-                                 "(normalized difference moisture index")
+                                 "(normalized difference moisture index)")
 
         parser.add_argument("--nbr", dest="nbr", default=False,
                             action="store_true",
                             help=("process NBR"
-                                  "(normalized burn ratio"))
+                                  "(normalized burn ratio)"))
 
         parser.add_argument("--nbr2", dest="nbr2", default=False,
                             action="store_true",
                             help="process NBR2"
-                                 "(normalized burn ratio2")
+                                 "(normalized burn ratio2)")
 
         parser.add_argument("--savi", dest="savi", default=False,
                             action="store_true",
@@ -538,21 +539,24 @@ class SI(ScriptHelper):
 
 if __name__ == '__main__':
     logger = get_logger()
-    try:
-        script = SI()
 
+    script = SI()
+
+    try:
         script.parse_arguments()
         if(script.check_prereq()):
             script.build_cmd_line()
-            script.execute()
+
+            try:
+                script.execute()
+            except Exception as e:
+                if(e.args[0] == 'EXECUTE_ERROR'):
+                    logger.exception(("Error running {0}."
+                                      "Processing will terminate."
+                                      ).format(script.title))
+                    exit_with_error()  # EXECUTE_ERROR
     except Exception as e:
         # Exceptions that were raised by the executable
-        if(e.args[0] == 'EXECUTE_ERROR'):
-            logger.exception(("Error running {0}."
-                              "Processing will terminate."
-                              ).format(script.title))
-            exit_with_error()  # EXECUTE_ERROR
-
         #  Handle any exceptions understood by script
         #  handle_exception may exit with error and not return.
         if(script.handle_exception() is False):
