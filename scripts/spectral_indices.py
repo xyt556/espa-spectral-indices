@@ -4,11 +4,12 @@
 Author: ngenetzky@usgs.gov
 License: NASA Open Source Agreement 1.3
 USGS Designation: EROS Science Processing Architecture (ESPA)
-
+Version: 0.0.1 (June 2015)
 
 Classes:
     Cmd
-    ScriptHelper (Version: 0.0.1 June 2015)
+    ScriptArgParser
+    ScriptHelper
     SI: Spectral Indices
 
 SI    :    Spectral Indices
@@ -20,13 +21,13 @@ SI    :    Spectral Indices
     Description:
 -----     -----     -----     -----     -----     -----     -----     -----
 '''
-
 import sys
 import os
 import argparse
 import logging
 import commands
 import metadata_api
+from distutils.tests.setuptools_build_ext import if_dl
 
 
 def exit_with_error():
@@ -54,11 +55,17 @@ class Cmd:
     Usage:
         # __init__(SCRIPTNAME, DIRECTORY)
         cmdScript = Cmd('my_script_name')
-        # addParam(PARAMERTER_NAME,PARAMETER_VALUE)
-        cmdScript.addParam('xml', my_xml.xml)
+        # add_param(PARAMERTER_NAME,PARAMETER_VALUE)
+        cmdScript.add_param('xml', my_xml.xml)
         # Will use commands.getstatusoutput to execute built cmd-line
         cmdScript.execute()
     '''
+
+    class EXECUTE_ERROR(Exception):
+        def __init__(self, message, *args):
+            self.message = message
+            Exception.__init__(self, message, *args)
+        pass
 
     def __init__(self, script_name, basedir=''):
         '''Setup the base of the cmdline with required directory and script name.
@@ -69,7 +76,16 @@ class Cmd:
         '''
         self.cmdline = [os.path.join(basedir, script_name)]
 
-    def addParam(self, name, *args):
+    def get_help(self):
+        '''
+        TODO
+        '''
+        self.add_param('--help')
+        cmd_string = self.__str__()
+        (status, output) = commands.getstatusoutput(cmd_string)
+        return output
+
+    def add_param(self, name, *args):
         '''Allows a parameter to be added; optionally with list of arguments
 
         Parameters:
@@ -77,48 +93,62 @@ class Cmd:
             args: Additional arguments to place after name
         '''
         self.cmdline.append(name)
-        self.cmdline.append(' '.join(args))
+        # Will only add an argument of the list if it is truthy
+        self.cmdline.append(' '.join(arg for arg in args if arg))
 
-    def __str__(self):
+    def __repr__(self):
         '''Combine the script name (and path) with the arguments'''
         return ' '.join(self.cmdline)
 
-    def getCmdline(self):
-        '''See __str__'''
-        return self.__str__()
+    def __str__(self):
+        '''See __repr__'''
+        return ' '.join(self.cmdline)
 
     def execute(self):
         ''' Execute a command line and return the terminal output
 
         Raises:
-            Exception('EXECUTE_ERROR', message): where message
-                contains Stout/Stderr
+            EXECUTE_ERROR (Stdout/Stderr)
         Returns:
             output:The stdout and/or stderr from the executed command.
         '''
-        cmd_string = str(self)
+        cmd_string = self.__str__()
         (status, output) = commands.getstatusoutput(cmd_string)
 
         if status < 0:
             message = "Application terminated by signal [%s]" % cmd_string
             if len(output) > 0:
                 message = ' Stdout/Stderr is: '.join([message, output])
-            raise Exception('EXECUTE_ERROR', message)
+            raise Cmd.EXECUTE_ERROR(message)
 
         if status != 0:
             message = "Application failed to execute [%s]" % cmd_string
             if len(output) > 0:
                 message = ' Stdout/Stderr is: '.join([message, output])
-            raise Exception('EXECUTE_ERROR', message)
+            raise Cmd.EXECUTE_ERROR(message)
 
         if os.WEXITSTATUS(status) != 0:
             message = ("Application [%s] returned error code [%d]"
                        % (cmd_string, os.WEXITSTATUS(status)))
             if len(output) > 0:
                 message = ' Stdout/Stderr is: '.join([message, output])
-            raise Exception('EXECUTE_ERROR', message)
+            raise Cmd.EXECUTE_ERROR(message)
 
         return output
+
+
+class ScriptArgParser(argparse.ArgumentParser):
+        class HELP_REQUESTED(Exception):
+            pass
+
+        class INVALID_ARGUMENT(Exception):
+            pass
+
+        def print_help(self, outfile=None):
+            raise ScriptArgParser.HELP_REQUESTED
+
+        def error(self, message):
+            raise ScriptArgParser.INVALID_ARGUMENT(message)
 
 
 class ScriptHelper:
@@ -133,19 +163,12 @@ class ScriptHelper:
         extend __init__ and define self.title and self.exe_filename
             super.__init__() should be called at the beginning
         override parse_arguments(). See parse_common_args().
-        override check_prereq(). See check_common_prereq(). (optional)
+        extend setup(). See check_common_prereq(). (optional)
         override build_cmd_line(). See build_cmd_line().
         extend handle_exception(). (optional)
-    Understood Exceptions:
-        NO_ACTION_REQUESTED,
-        INVALID_FILE: (Type of file, filename given),
-        INVALID_SATELLITE_XML,
-        INVALID_SUBCLASS,
-        INVALID_FILE_PARAM : (Expected format, filename given)
     '''
-    # Possible future additions:
-    # 1. Allow use of use BIN env. variable as the location of executable.
-    # 2. Allow a log file to be specified.
+    __title__ = 'Script Helper'
+    __version__ = '0.0.1 (June 2015)'
 
     def __init__(self):
         '''Create an instance of Script Helper
@@ -160,13 +183,44 @@ class ScriptHelper:
             args: will be defined by parse_arguments.
             cmd: will be defined by build_cmd_line
         '''
-        self.logger = ScriptHelper._get_logger()
+        self.logger = logging.getLogger(__name__)
         self.args = None
         self.cmd = None
         self.config = None
         # Should be defined by sub-class
         self.title = 'Title Not Defined'
         self.exe_filename = 'Program Name not defined'
+        self.description = 'Description not defined'
+        self.parser = ScriptArgParser(description=
+                                      self.description,
+                                      add_help=True)
+
+    class NO_ACTION_REQUESTED(Exception):
+        pass
+
+    class INVALID_FILE(Exception):
+        def __init__(self, name, recieved, *args):
+            self.name = name
+            self.recieved = recieved
+            Exception.__init__(name, recieved, *args)
+
+    class INVALID_FILE_PARAM(Exception):  # (Expected format,received filename)
+        def __init__(self, expected, recieved, *args):
+            self.expected = expected
+            self.recieved = recieved
+            Exception.__init__(expected, recieved, *args)
+
+    class INVALID_SATELLITE_XML(Exception):
+        pass
+
+    class INVALID_SUBCLASS(Exception):
+        pass
+
+    class MISSING_ENV_VARIABLE(Exception):
+        pass
+
+    class EXECUTABLE_NOT_DEFINED(Exception):
+        pass
 
     def get_config_from_xml(self, xml_filename):
         ''' Stores desired information into dictionary from xml file
@@ -196,14 +250,14 @@ class ScriptHelper:
         Parameter:
             Config dictionary from ScriptHelper.get_config_from_xml()
         Raises:
-            NotImplementedError('INVALID_SATELLITE_XML')
+            INVALID_SATELLITE_XML
         '''
         if config['satellite'] is 'LANDSAT_8':
             return True
         elif config['satellite'] in ['LANDSAT_4', 'LANDSAT_5', 'LANDSAT_7']:
             return False
         else:
-            raise NotImplementedError('INVALID_SATELLITE_XML')
+            raise ScriptHelper.INVALID_SATELLITE_XML
 
     @staticmethod
     def str_to_bool(string):
@@ -212,29 +266,14 @@ class ScriptHelper:
         Supported Strings:['true', '1', 't', 'yes']
                           ['false', '0', 'f', 'no']
         '''
-        if(string.lower() == ['true', '1', 't', 'yes']):
+        if(string.lower() in ['true', '1', 't', 'yes']):
             return True
         elif(string.lower() in ['false', '0', 'f', 'no']):
             return False
 
     @staticmethod
-    def _get_logger():
-        '''Obtain Logger object from logging module
-
-        Pre-Condition: The configuration must already be set.
-        '''
-        logger = logging.getLogger(__name__)
-        return logger
-
-    @staticmethod
-    def get_bin_dir():
-        '''Returns the BIN dir environment variable.'''
-        bin_dir = os.environ.get('BIN')
-        bin_dir = bin_dir + '/'
-        return bin_dir
-
-    @staticmethod
-    def parse_common_args(parser, xml=False, debug=False, verbose=False):
+    def parse_common_args(parser, xml=False, debug=False, verbose=False,
+                          version=False):
         '''Allows common arguments to be added to the parser.
 
         Description:
@@ -252,38 +291,121 @@ class ScriptHelper:
         if(xml):
             parser.add_argument('--xml', action='store',
                                 dest='xml_filename', required=True,
-                                help='The XML metadata file to use',
+                                help='Input XML metadata file',
                                 metavar='FILE')
         if(debug):
             parser.add_argument('--debug',
                                 action='store_true', dest='debug',
                                 required=False, default=False,
-                                help="Keep any debugging data")
+                                help="Keep any debugging data"
+                                     " (default is False)")
         if(verbose):
             parser.add_argument('--verbose',
                                 action='store_true', dest='verbose',
                                 required=False, default=False,
                                 help=('Should intermediate messages'
-                                      ' be printed? (default value is False)'))
+                                      ' be printed? (default is False)'))
+        if(version):
+            parser.add_argument('--version',
+                                action='store_true', dest='version',
+                                required=False, default=False,
+                                help=('Should intermediate messages'
+                                      ' be printed? (default is False)'))
         return parser
+
+    def parse_only_xml(self, list_ignored=False):
+        '''
+        TODO
+        '''
+        # Try to parse out the XML so the exe can be determined
+        parse_xml = ScriptArgParser(add_help=False)
+        parse_xml = self.parse_common_args(parse_xml, xml=True)
+        (temp, extra_args) = parse_xml.parse_known_args()
+        if(list_ignored):
+            print 'The following arguments were ignored:' + ''.join(extra_args)
+        self.args.xml_filename = temp.args.xml_filename
+        return self.args.xml_filename
+
+    def print_custom_help(self, this_module_help_only=True):
+        '''
+        TODO
+        '''
+        if(this_module_help_only):
+            msg = '{0} {1}\n{2}'.format(
+                                       # Name of the Sub Class
+                                       self.__class__.__title__,
+                                       # Version of the Sub Class
+                                       self.__class__.__version__,
+                                       self.parser.format_help(),
+                                       )
+        else:
+            msg = ('{0} {1} was used by {2} {3} \n{4}\n'
+                   'Help from executables under this script:\n{5}'
+                   .format(
+                           # Title of the module
+                           self.title,
+                           # Version of the underlying executable
+                           self.get_executables_version(),
+                           # Name of the Sub Class
+                           self.__class__.__title__,
+                           # Version of the Sub Class
+                           self.__class__.__version__,
+                           self.parser.format_help(),
+                           self.get_executables_help()
+                   ))
+        print msg
+
+    def get_executables_version(self):
+        '''
+        TODO
+        '''
+        try:
+            cmd = Cmd(self.exe_filename)
+            cmd.add_param('--version')
+            version_msg = cmd.execute()
+            return version_msg
+        except NameError:
+            raise ScriptHelper.EXECUTABLE_NOT_DEFINED
+        except Cmd.EXECUTE_ERROR:
+            #  print('Application returned error when requesting --version')
+            return ''  # If version can't be obtained then leave it empty
+        else:
+            raise
+
+    # Error Cause
+    def get_executables_help(self):
+        '''
+        TODO
+        '''
+        try:
+            cmd = Cmd(self.exe_filename)
+            help_msg = cmd.get_help()
+            return help_msg
+        except NameError:
+            raise ScriptHelper.EXECUTABLE_NOT_DEFINED
+        except Cmd.EXECUTE_ERROR as e:
+            print('Application returned error when requesting --help')
+            return e.args[0]  # Message should contain Stdout, but also Stderr
+        else:
+            raise
 
     def check_common_prereq(self, check_xml=True):
         '''Allow easy way to check conditions that are commonly required for a script.
 
         Description:
-            Should be used by subclass overriding check_prereq()
+            Should be used by subclass setup setup()
         Raises:
-            ValueError('INVALID_FILE_PARAM', expected format, xml_filename)
-
+            INVALID_FILE_PARAM (Expected format, received filename)
+            INVALID_FILE (Filetype/Description, received filename)
         '''
         if check_xml:
             # Verify that the XML filename provided is not an empty string
             if '.xml' not in self.args.xml_filename:
-                raise ValueError('INVALID_FILE_PARAM', '*.xml*',
-                                 self.args.xml_filename)
+                raise ScriptHelper.INVALID_FILE_PARAM('*.xml*',
+                                                      self.args.xml_filename)
             if not os.path.isfile(self.args.xml_filename):
-                raise ValueError('INVALID_FILE', 'XML',
-                                 self.args.xml_filename)
+                raise ScriptHelper.INVALID_FILE('XML',
+                                                self.args.xml_filename)
         return True
 
     def get_execute_header(self):
@@ -292,7 +414,7 @@ class ScriptHelper:
                 " ({1}). Using the command line:{2}"
                 ).format(self.title,
                          self.args.xml_filename,
-                         self.cmd.getCmdline()
+                         str(self.cmd)
                          )
 
     def execute(self):
@@ -318,44 +440,78 @@ class ScriptHelper:
         To-Do for subclass:
             Override. Create argparse.ArgumentParser object.
                 argparse.ArgumentParser(description=self.description)
-            Add additional parameters by using Cmd.addParam()
+            Add additional parameters by using Cmd.add_param()
             Must put arguments into self.args
                 self.args = parser.parse_args()
         SubClass Note:
             If this method is not overridden it will raise exception.
         Raises:
-            NotImplementedError('INVALID_SUBCLASS')
+            INVALID_SUBCLASS
         '''
-        raise NotImplementedError('INVALID_SUBCLASS')
+        raise ScriptHelper.INVALID_SUBCLASS
 
-    def check_prereq(self):  # SubClass should implement.
-        '''Should check conditions that must be for the script to execute.
+    def get_exe_filename(self):  # SubClass should implement.
+        '''Should parse command line arguments using argparse module.
 
         To-Do for subclass:
-            Optionally Override. Check conditions that must be
+            Override. If exe_filename is defined as None in __init__
+        Raises:
+            EXECUTABLE_NOT_DEFINED
+        '''
+        if self.exe_filename:
+            return self.exe_filename
+        else:
+            raise ScriptHelper.EXECUTABLE_NOT_DEFINED
+
+    def setup(self):  # SubClass should implement.
+        '''Should ensure the class is ready to build/execute the script
+
+        To-Do for subclass:
+            Optionally Extend. Check conditions that must be
             true in order for the executable to be executed.
             This function would be a valid time to set the the executable
             if it depends on the arguments passed in.
-        Note:
-            If a condition is failed it can raise exception or return false
-            which will skip execution of script.
-        SubClass Note:
-            If this method is not overridden it will always return True.
         '''
-        return True
+        try:
+            self.args = self.parser.parse_args()
+
+        except ScriptArgParser.HELP_REQUESTED:
+            try:  # Assume XML is in arg list
+                self.print_custom_help(this_module_help_only=False)
+                exit(0)
+            except NameError:
+                # Then print extended help
+                self.parse_only_xml()
+                self.get_config_from_xml(self.args.xml_filename)
+                self.get_exe_filename()
+                self.print_custom_help(this_module_help_only=False)
+                exit(0)
+        except ScriptArgParser.INVALID_ARGUMENT as e:
+            try:  # Then print extended help
+                self.parse_only_xml()
+                self.get_config_from_xml(self.args.xml_filename)
+                self.get_exe_filename()
+                self.print_custom_help(this_module_help_only=False)
+                print('INVALID_ARGUMENT:'+e.args[0])
+                exit(0)
+            except ScriptArgParser.INVALID_ARGUMENT as exc:
+                # Then print simple help
+                self.print_custom_help(this_module_help_only=True)
+                print('INVALID_ARGUMENT:'+exc.args[0])
+                exit(0)
 
     def build_cmd_line(self):  # SubClass should implement.
         '''Builds a Cmd object that can be executed to run the executable.
 
         To-Do for subclass:
             Override. Create Cmd object and store in self.cmd
-            Add additional parameters by using Cmd.addParam()
+            Add additional parameters by using Cmd.add_param()
         SubClass Note:
             If this method is not overridden it will raise exception.
         Raises:
-            NotImplementedError('INVALID_SUBCLASS')
+            INVALID_SUBCLASS
         '''
-        raise NotImplementedError('INVALID_SUBCLASS')
+        raise ScriptHelper.INVALID_SUBCLASS
 
     def handle_exception(self):
         '''Will handle any exception that the ScriptHelper understands.
@@ -372,43 +528,55 @@ class ScriptHelper:
             Consider effects of calling super.handle_exception at beginning or
             end of the method that extends this method.
         Understood exceptions:
-            See class.__doc__
+            Any Exception class defined in ScriptHelper directly
         Return:
             exceptionHandled: returns False if the exception was not understood
         '''
-        # gets the exception type of exception being handled (class object)
+        # Gets the exception type of exception being handled (class object)
         e_type = sys.exc_info()[0]
-        # gets the exception parameter (the second argument to raise)
+        # Gets the exception parameter (the second argument to raise)
         e = sys.exc_info()[1]
-        if e_type is ValueError:
-            if(e.args[0] == 'NO_ACTION_REQUESTED'):
-                exit_with_error()  # NO_ACTION_REQUESTED
-            elif(e.args[0] == 'INVALID_FILE'):
-                self.logger.fatal("Error: {0} file ({1}) does not exist or is"
-                                  "not accessible.".format(e.args[1],
-                                                           e.args[2]))
-                exit_with_error()  # INVALID_FILE
 
-            elif(e.args[0] == 'INVALID_FILE_PARAM'):
-                self.logger.error("Error: Expecting file parameter of format"
-                                  " ({0}) but found ({1})".format(e.args[1],
-                                                                  e.args[2]))
+        if e_type is ScriptHelper.NO_ACTION_REQUESTED:
+            self.logger.fatal("NO_ACTION_REQUESTED")
+            try:
+                self.logger.fatal(e.args[0])
+            except NameError:
+                pass
+            exit_with_error()
 
-        elif e_type is NotImplementedError:
-            if(e.args[0] == 'INVALID_SATELLITE_XML'):
-                self.logger.fatal("Error: XML specifies invalid satellite")
-                exit_with_error()  # INVALID_SATELLITE_XML
+        elif e_type is ScriptHelper.INVALID_FILE:
+            try:
+                self.logger.fatal("Error: {0} file ({1}) does not exist or"
+                                  " is not accessible."
+                                  .format(e.name, e.recieved))
+            except NameError:
+                pass
+            exit_with_error()
 
-            elif(e.args[0] == 'INVALID_SUBCLASS'):
-                self.logger.fatal("Script Helper was improperly subclassed")
-                exit_with_error()  # INVALID_SUBCLASS
+        elif e_type is ScriptHelper.INVALID_FILE_PARAM:
+            try:
+                self.logger.error("Error: Expecting file parameter of"
+                                  " format ({0}) but found ({1})"
+                                  .format(e.expected, e.recieved))
+            except NameError:
+                pass
+            exit_with_error()
 
+        elif e_type is ScriptHelper.INVALID_SATELLITE_XML:
+            self.logger.fatal("Error: XML specifies invalid satellite")
+            exit_with_error()
+
+        elif e_type is ScriptHelper.INVALID_SUBCLASS:
+            self.logger.fatal("Script Helper was improperly subclassed")
+            exit_with_error()
+
+        elif e_type is ScriptHelper.MISSING_ENV_VARIABLE:
+            self.logger.fatal("Error: Missing environment Variable")
+            exit_with_error()  # MISSING_ENV_VARIABLE
         else:
-            if(e.args[0] == 'MISSING_ENV_VARIABLE'):
-                self.logger.fatal("Error: Missing environment Variable")
-                exit_with_error()  # MISSING_ENV_VARIABLE
-
-        return False
+            # Return False because Script Helper does not understand Exception
+            return False
 
 
 class SI(ScriptHelper):
@@ -418,11 +586,10 @@ class SI(ScriptHelper):
     Executables: spectral_indices
         Authors:
     Understood Exceptions:
-        See ScriptHelper.__doc__ for more Understood Exceptions.
+        Those understood by ScriptHelper.
     '''
-    # Compared to do_spectral_indices:
-    # Removed Log file argument
-    # Removed usebin argument
+    __title__ = 'Spectral-Indices'
+    __version__ = '0.0.1 (June 2015)'
 
     def __init__(self):
         ScriptHelper.__init__(self)
@@ -438,64 +605,59 @@ class SI(ScriptHelper):
 
     def parse_arguments(self):
         '''See ScriptHelper.parse_arguments() for more details'''
-
-        parser = argparse.ArgumentParser(description=self.description)
-        # Required parameters
-        parser = ScriptHelper.parse_common_args(parser, xml=True)
+        self.parser = ScriptHelper.parse_common_args(self.parser, xml=True)
         # Additional parameters
-        parser.add_argument("--toa", dest="toa", default=False,
-                            action="store_true",
-                            help="process TOA bands"
+        self.parser.add_argument("--toa", dest="toa", default=False,
+                                 action="store_true",
+                                 help="process TOA bands"
                                  " instead of surface reflectance bands")
 
-        parser.add_argument("--ndvi", dest="ndvi", default=False,
-                            action="store_true",
-                            help="process NDVI"
+        self.parser.add_argument("--ndvi", dest="ndvi", default=False,
+                                 action="store_true",
+                                 help="process NDVI"
                                  "(normalized difference vegetation index)")
 
-        parser.add_argument("--ndmi", dest="ndmi", default=False,
-                            action="store_true",
-                            help="process NDMI"
+        self.parser.add_argument("--ndmi", dest="ndmi", default=False,
+                                 action="store_true",
+                                 help="process NDMI"
                                  "(normalized difference moisture index)")
 
-        parser.add_argument("--nbr", dest="nbr", default=False,
-                            action="store_true",
-                            help=("process NBR"
-                                  "(normalized burn ratio)"))
+        self.parser.add_argument("--nbr", dest="nbr", default=False,
+                                 action="store_true",
+                                 help=("process NBR"
+                                       "(normalized burn ratio)"))
 
-        parser.add_argument("--nbr2", dest="nbr2", default=False,
-                            action="store_true",
-                            help="process NBR2"
+        self.parser.add_argument("--nbr2", dest="nbr2", default=False,
+                                 action="store_true",
+                                 help="process NBR2"
                                  "(normalized burn ratio2)")
 
-        parser.add_argument("--savi", dest="savi", default=False,
-                            action="store_true",
-                            help="process SAVI"
+        self.parser.add_argument("--savi", dest="savi", default=False,
+                                 action="store_true",
+                                 help="process SAVI"
                                  "(soil adjusted vegetation index)")
 
-        parser.add_argument("--msavi", dest="msavi", default=False,
-                            action="store_true",
-                            help="process modified SAVI"
+        self.parser.add_argument("--msavi", dest="msavi", default=False,
+                                 action="store_true",
+                                 help="process modified SAVI"
                                  "(soil adjusted vegetation index)")
 
-        parser.add_argument("--evi", dest="evi", default=False,
-                            action="store_true",
-                            help="process EVI"
-                                 "(enhanced vegetation index")
+        self.parser.add_argument("--evi", dest="evi", default=False,
+                                 action="store_true",
+                                 help="process EVI"
+                                 "(enhanced vegetation index)")
         # Common command line arguments
-        parser = ScriptHelper.parse_common_args(parser,
-                                                debug=False, verbose=True)
-        # Parse the command line parameters
-        self.args = parser.parse_args()
+        self.parser = ScriptHelper.parse_common_args(self.parser,
+                                                     debug=False, verbose=True)
 
-    def check_prereq(self):
+    def setup(self):
         '''Checks that a product was specified
 
-        See ScriptHelper.build_cmd_line() for more details
+        See ScriptHelper.setup() for more details
         Raises:
-            ValueError('NO_ACTION_REQUESTED', message)
+            NO_ACTION_REQUESTED(msg)
         '''
-        run = self.check_common_prereq(check_xml=True)
+        ScriptHelper.setup(self)
         # make sure there is something to do
         if (not self.args.ndvi and
                 not self.args.ndmi and
@@ -504,37 +666,33 @@ class SI(ScriptHelper):
                 not self.args.savi and
                 not self.args.msavi and
                 not self.args.evi):
-            self.logger.error("Error:no spectral index product"
-                              " specified to be processed")
-            raise ValueError('NO_ACTION_REQUESTED', 'No spectral index product'
-                                                    'specified to be processed'
-                             )
-            return False
-        return run
+            raise ScriptHelper.NO_ACTION_REQUESTED('No spectral indices'
+                                                   ' product specified to'
+                                                   ' be processed')
 
     def build_cmd_line(self):
         '''See ScriptHelper.build_cmd_line() for more details'''
         self.cmd = Cmd(self.exe_filename)
-        self.cmd.addParam("--xml", self.args.xml_filename)
+        self.cmd.add_param("--xml", self.args.xml_filename)
 
         if self.args.verbose:
-            self.cmd.addParam("--verbose")
+            self.cmd.add_param("--verbose")
         if self.args.toa:
-            self.cmd.addParam("--toa")
+            self.cmd.add_param("--toa")
         if self.args.ndvi:
-            self.cmd.addParam("--ndvi")
+            self.cmd.add_param("--ndvi")
         if self.args.ndmi:
-            self.cmd.addParam("--ndmi")
+            self.cmd.add_param("--ndmi")
         if self.args.nbr:
-            self.cmd.addParam("--nbr")
+            self.cmd.add_param("--nbr")
         if self.args.nbr2:
-            self.cmd.addParam("--nbr2")
+            self.cmd.add_param("--nbr2")
         if self.args.savi:
-            self.cmd.addParam("--savi")
+            self.cmd.add_param("--savi")
         if self.args.msavi:
-            self.cmd.addParam("--msavi")
+            self.cmd.add_param("--msavi")
         if self.args.evi:
-            self.cmd.addParam("--evi")
+            self.cmd.add_param("--evi")
 
 
 if __name__ == '__main__':
@@ -544,17 +702,20 @@ if __name__ == '__main__':
 
     try:
         script.parse_arguments()
-        if(script.check_prereq()):
-            script.build_cmd_line()
+        script.setup()
+        script.build_cmd_line()
 
+        try:
+            script.execute()
+        except Cmd.EXECUTE_ERROR as e:
+            logger.exception(("Error running {0}."
+                              "Processing will terminate."
+                              ).format(script.title))
             try:
-                script.execute()
-            except Exception as e:
-                if(e.args[0] == 'EXECUTE_ERROR'):
-                    logger.exception(("Error running {0}."
-                                      "Processing will terminate."
-                                      ).format(script.title))
-                    exit_with_error()  # EXECUTE_ERROR
+                logger.info(e.args[0])
+            except NameError:  # No Message
+                pass
+            exit_with_error()
     except Exception as e:
         # Exceptions that were raised by the executable
         #  Handle any exceptions understood by script
