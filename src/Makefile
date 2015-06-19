@@ -30,13 +30,12 @@ EXE = spectral_indices
 # Target for the executable
 all: $(EXE)
 
-spectral_indices: $(OBJ) $(INC)
+$(EXE): $(OBJ) $(INC)
 	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LIB)
 
-install:
+install: $(EXE)
 	install -d $(PREFIX)/bin
 	install -m 755 $(EXE) $(PREFIX)/bin
-	install -m 755 ../scripts/*.py $(PREFIX)/bin
 
 clean:
 	$(RM) *.o $(EXE)
@@ -45,4 +44,5 @@ $(OBJ): $(INC)
 
 .c.o:
 	$(CC) $(NCFLAGS) -c $<
+
 
