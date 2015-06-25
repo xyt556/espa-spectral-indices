@@ -3,7 +3,6 @@
 -----     -----     -----     -----     -----     -----     -----     -----
 Author: ngenetzky@usgs.gov
         Underlying scripts' author are described with the class documentation
-Version:
 License: NASA Open Source Agreement 1.3
 USGS Designation: EROS Science Processing Architecture (ESPA)
 
@@ -12,9 +11,21 @@ Classes:
     ScriptArgParser
     ScriptHelper (Version:0.0.1)
     SI: Spectral Indices (Version:2.1.0)
-    SWE: Surface Water Extent
-    Cfmask: Cloud Function Mask
-    SR: Surface Reflectance
+
+SI: Spectral Indices
+    Author:  gschmidt@usgs.gov
+    File: spectral_indices.py
+    Version: 2.1.0
+    Source: https://github.com/USGS-EROS/espa-spectral-indices
+    Purpose: Master script for creating spectral indices products.
+    Usage: See "spectral_indices.py --help"
+    Dependencies: spectral_indices
+    Description:
+        spectral_indices produces the desired spectral index products for the
+        input surface reflectance or TOA reflectance bands. The options
+        include: NDVI, EVI, SAVI, MSAVI, NDMI (also known as NDWI or NDII),
+        NBR, and NBR2. The user may specify one, some, or all of the
+        supported indices for output.
 -----     -----     -----     -----     -----     -----     -----     -----
 '''
 import sys
@@ -659,50 +670,6 @@ class ScriptHelper:  # ########################################################
                 raise   # Unhandled/Unexpected exceptions will not be masked
 
 
-class SWE(ScriptHelper):  # ###################################################
-    '''Parse request, check conditions, execute appropriate executable
-
-    SWE: Surface Water Extent
-    Author: rdilley@usgs.gov
-    File: surface_water_extent.py
-    Source: https://github.com/USGS-EROS/espa-surface-water-extent
-    Purpose: Master script for running scene-based surface water algorithm.
-    Usage: See "do_dynamic_surface_water_extent.py --help"
-    Dependencies: dswe
-    Description:
-    '''
-    __title__ = 'Surface-Water-Extent'
-    __version__ = '0.0.1 (June 2015)'
-
-    def __init__(self):
-        ScriptHelper.__init__(self)
-        self.exe_filename = 'dswe'
-        self.title = 'Surface Water Extent'
-        self.description = ("Build the command line and then kick-off the"
-                            "Dynamic Surface Water Extent application")
-
-    def build_parser(self):
-        '''See ScriptHelper.build_parser() for more details'''
-        self.parser = ScriptArgParser(description=self.description,
-                                      add_help=True)
-        # Required parameters
-        self.parser = ScriptHelper.parse_common_args(self.parser, xml=True)
-        self.parser.add_argument('--dem', action='store', dest='dem_filename',
-                                 required=True,
-                                 help="The DEM metadata file to use")
-        # Additional parameters
-        self.parser = ScriptHelper.parse_common_args(self.parser,
-                                                     debug=True, verbose=True)
-
-    def build_cmd_line(self):
-        '''See ScriptHelper.build_cmd_line() for more details'''
-        self.cmd = Cmd(self.exe_filename)
-        self.cmd.add_param("--xml", self.args.xml_filename)
-        self.cmd.add_param("--dem", self.args.dem_filename)
-        if self.args.verbose:
-            self.cmd.add_param("--verbose")
-
-
 class SI(ScriptHelper):  # ####################################################
     '''Parse request, check conditions, execute appropriate executable
 
@@ -832,264 +799,14 @@ class SI(ScriptHelper):  # ####################################################
         e_type = sys.exc_info()[0]
         # e = sys.exc_info()[1]
         if e_type is ScriptHelper.NO_ACTION_REQUESTED:
-            self.logger.warning('NO_ACTION_REQUESTED:No SI product specified.')
             self.print_custom_help()
+            self.logger.warning('NO_ACTION_REQUESTED:No SI product specified.')
             return True
         return ScriptHelper.handle_exception(self)
 
     def get_executables_version(self):
         return '2.1.0'  # Hardcode Version
         # return ScriptHelper.get_executables_version(self)
-
-
-class SR(ScriptHelper):  # ####################################################
-    '''Parse request, check conditions, execute appropriate executable
-
-    SR: Surface Reflectance
-    Author:  gschmidt@usgs.gov
-    File: surface-reflectance.py
-    Purpose: https://github.com/USGS-EROS/espa-surface-reflectance
-    PURPOSE: Master script for creating surface reflectance products.
-    USAGE: See "surface-reflectance.py --help"
-    Dependencies: do_ledaps.py, do_l8_sr.py
-    Description:
-    '''
-    __title__ = 'Surface-Reflectance'
-    __version__ = '0.0.1 (June 2015)'
-
-    def __init__(self):
-        ScriptHelper.__init__(self)
-        self.exe_filename = None  # Determined later in get_exe_filename()
-        self.title = 'Surface Reflectance'
-        self.description = ('''description_of_executable''')
-
-    def build_parser(self):
-        '''See ScriptHelper.build_parser() for more details'''
-        self.parser = ScriptArgParser(description=self.description,
-                                      add_help=True)
-        # Required parameters
-        self.parser = ScriptHelper.parse_common_args(self.parser, xml=True)
-        # Additional parameters
-        msg = ('Process the surface reflectance products; True or False'
-               '(default is True) If False, then processing will halt after'
-               'the TOA reflectance products are complete.')
-        self.parser.add_argument('--process_sr', action='store',
-                                 type=ScriptHelper.str_to_bool,
-                                 dest='process_sr',
-                                 required=True, help=msg, metavar='BOOL')
-        try:
-            self.parse_only_xml()
-        except ScriptArgParser.INVALID_ARGUMENT:
-            self.print_custom_help()
-
-        if(self.get_exe_filename() == Cfmask.L8_exe):
-            self.parser.add_argument('--write_toa',
-                                     action='store_true', dest='write_toa',
-                                     required=False, default=False,
-                                     help="Write top of atmosphere"
-                                     "")
-        # Common command line arguments
-        self.parser = ScriptHelper.parse_common_args(self.parser,
-                                                     debug=False,
-                                                     verbose=False)
-
-    def get_exe_filename(self):
-        ''' Uses get_config_from_xml to determine which exe to use.
-
-        See ScriptHelper.get_exe_filename() for more details
-        '''
-        if self.args.xml_filename is None:
-            self.parse_only_xml()
-            print('self.args.xml_filename is None')
-        if self.config is None:
-            # Obtain Config from XML to know if satellite is L8 or not
-            self.get_config_from_xml(self.args.xml_filename)
-            print('self.config is None')
-
-        if(ScriptHelper.is_landsat8(self.config)):
-            self.exe_filename = 'do_l8_sr.py'
-        else:
-            self.exe_filename = 'do_ledaps.py'
-
-        return self.exe_filename
-
-    def build_cmd_line(self):
-        '''See ScriptHelper.build_cmd_line() for more details'''
-        # self.args.process_sr = ScriptHelper.str_to_bool(self.args.process_sr)
-
-        try:
-            self.cmd = Cmd(self.get_exe_filename())
-        except(Cmd.INVALID_SCRIPT):  # If exe_filename==None
-            self.get_config_from_xml(self.args.xml_filename)
-            self.get_exe_filename()
-            self.cmd = Cmd(self.get_exe_filename())
-
-        self.cmd.add_param("--xml", self.args.xml_filename)
-
-        # Format of boolean depends on the recieving script.
-        if self.args.process_sr:
-            self.cmd.add_param("--process_sr", "True")
-        else:
-            self.cmd.add_param("--process_sr", "False")
-
-        if(self.get_exe_filename() == Cfmask.L8_exe):
-            if self.args.write_toa:
-                self.cmd.add_param("--write_toa")
-
-    def handle_exception(self):
-        '''Will handle any exception that the ScriptHelper understands.
-
-        See ScriptHelper.handle_exception() for more details.
-        See sys.exc_info() for access to exception information.
-        Description:
-        Return:
-            exceptionHandled: returns False if the exception was not understood
-        '''
-        return ScriptHelper.handle_exception(self)
-
-
-class Cfmask(ScriptHelper):  # ################################################
-    '''Parse request, check conditions, execute appropriate executable
-
-    CFMASK: Cloud Function Mask
-    Author: rdilley@usgs.gov
-    File: cfmask.py
-    Source: https://github.com/USGS-EROS/espa-cloud-masking
-    Purpose: Master script for creating cloud masking products.
-    Usage: See "cfmask.py --help"
-    Dependencies: cfmask, l8cfmask fillminima.py run_fillminima.py
-    Description:
-        Fmask identify the cloud, shadow, snow, water and clear pixels
-        using the input Landsat scene (top of atmosphere (TOA)
-        reflection and brightness temperature (BT) for band 10) output
-        from LEDAPS
-    '''
-    __title__ = 'Cloud Function Mask'
-    __version__ = '0.0.1 (June 2015)'
-
-    L8_exe = 'l8cfmask'
-    L457_exe = 'cfmask'
-
-    def __init__(self):
-        ScriptHelper.__init__(self)
-        self.exe_filename = None  # Determined later in get_exe_filename()
-        self.title = 'Cloud Function Mask'
-        self.description = ('''Fmask identify the cloud, shadow, snow, water and clear pixels using
-        the input Landsat scene (top of atmosphere (TOA) reflection and
-        brightness temperature (BT) for band 6) output from LEDAPS''')
-
-    def build_parser(self):
-        '''See ScriptHelper.build_parser() for more details'''
-        self.parser = ScriptArgParser(description=self.description,
-                                      add_help=True)
-        # Required parameters
-        self.parser = ScriptHelper.parse_common_args(self.parser, xml=True)
-        # Additional parameters
-        self.parser.add_argument('--prob', action='store',
-                                 dest='prob',
-                                 required=False,
-                                 help='cloud_probability',
-                                 )
-        self.parser.add_argument('--cldpix', action='store',
-                                 dest='cldpix',
-                                 required=False,
-                                 help='cloud_pixel_buffer for image dilate',
-                                 )
-        self.parser.add_argument('--sdpix', action='store',
-                                 dest='sdpix',
-                                 required=False,
-                                 help='cloud_pixel_buffer for image dilate',
-                                 )
-        self.parser.add_argument('--max_cloud_pixels', action='store',
-                                 dest='max_cloud_pixels',
-                                 required=False,
-                                 help='maximum_cloud_pixel_number for cloud'
-                                      ' division',
-                                 )
-        try:
-            self.parse_only_xml()
-        except ScriptArgParser.INVALID_ARGUMENT:
-            self.print_custom_help()
-
-        if(self.get_exe_filename() == Cfmask.L8_exe):
-            msg = ("Should Landsat 8 QA band cirrus bit info be used in cirrus"
-                   " cloud detection? (If not specified means Bonston"
-                   " University's dynamic cirrus band static threshold will be"
-                   " used)")
-            self.parser.add_argument('--use_l8_cirrus', action='store_true',
-                                     dest='use_l8_cirrus',
-                                     required=False,
-                                     help=msg
-                                     )
-        # Common command line arguments
-        self.parser = ScriptHelper.parse_common_args(self.parser,
-                                                     debug=False, verbose=True)
-
-    def get_exe_filename(self):
-        '''Uses config read from XML to determine executable
-
-        Assumes: self.config exists from calling get_config_from_xml()
-        Raises: ScriptHelper.EXECUTABLE_NOT_DEFINED
-        '''
-        if self.args.xml_filename is None:
-            self.parse_only_xml()
-            print('self.args.xml_filename is None')
-        if self.config is None:
-            # Obtain Config from XML to know if satellite is L8 or not
-            self.get_config_from_xml(self.args.xml_filename)
-            print('self.config is None')
-
-        if(ScriptHelper.is_landsat8(self.config)):
-            self.exe_filename = Cfmask.L8_exe
-        else:
-            self.exe_filename = Cfmask.L457_exe
-        return self.exe_filename
-
-    def build_cmd_line(self):
-        '''See ScriptHelper.build_cmd_line() for more details'''
-        if self.args.xml_filename is None:
-            self.parse_only_xml()
-        if self.config is None:
-            self.get_config_from_xml(self.args.xml_filename)
-        try:
-            self.cmd = Cmd(self.get_exe_filename())
-        except(Cmd.INVALID_SCRIPT):  # Will raise if exe_filename=None
-            self.get_config_from_xml(self.args.xml_filename)
-            self.get_exe_filename()
-            self.cmd = Cmd(self.get_exe_filename())
-
-        self.cmd.add_param("--xml", self.args.xml_filename)
-
-        if self.args.prob is not None:
-            self.cmd.add_param("--prob", self.args.prob)
-
-        if self.args.cldpix is not None:
-            self.cmd.add_param("--cldpix", self.args.cldpix)
-
-        if self.args.sdpix is not None:
-            self.cmd.add_param("--sdpix", self.args.sdpix)
-
-        if self.args.max_cloud_pixels is not None:
-            self.cmd.add_param("--max_cloud_pixels",
-                               self.args.max_cloud_pixels)
-
-        if self.get_exe_filename() is Cfmask.L8_exe:
-            if self.args.use_l8_cirrus:
-                self.cmd.add_param("--use_l8_cirrus", self.args.use_l8_cirrus)
-
-        if self.args.verbose:
-            self.cmd.add_param("--verbose")
-
-    def handle_exception(self):
-        '''Will handle any exception that the ScriptHelper understands.
-
-        See ScriptHelper.handle_exception() for more details.
-        See sys.exc_info() for access to exception information.
-        Description:
-        Return:
-            exceptionHandled: returns False if the exception was not understood
-        '''
-        return ScriptHelper.handle_exception(self)
 
 
 def main():
@@ -1111,58 +828,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-""" Template for creating a subclass of ScriptHelper
-class NameOfModule(ScriptHelper):
-    '''Parse request, check conditions, execute appropriate executable
-
-    Description:
-    Executables:
-        Authors:
-    '''
-    __title__ = 'Script_Template'
-    __version__ = '0.0.1 (June 2015)'
-    def __init__(self):
-        ScriptHelper.__init__(self)
-        self.exe_filename = 'name_of_executable'  # None = determined later
-        self.title = 'Title_Of_Executable'
-        self.description = ('''description_of_executable''')
-        # Insert_Code_After_Here
-
-    def build_parser(self):
-        '''See ScriptHelper.build_parser() for more details'''
-
-        parser = argparse.ArgumentParser(description=self.description)
-        # Required parameters
-        parser = ScriptHelper.parse_common_args(parser, xml=True)
-        # Additional parameters
-        parser.add_argument("--cmdline_name", dest="args_name", default=False,
-                            action="store_true",
-                            help="help"
-                                 "even_more_help")
-        # Common command line arguments
-        parser = ScriptHelper.parse_common_args(parser,
-                                                debug=False, verbose=False)
-
-    def build_cmd_line(self):
-        '''See ScriptHelper.build_cmd_line() for more details'''
-
-        self.cmd = Cmd(self.exe_filename)
-        self.cmd.add_param("--argument_with_param", self.args.xml_filename)
-
-        if self.args.boolean:
-            self.cmd.add_param("--some_flag")
-
-    def handle_exception(self):
-        '''Will handle any exception that the ScriptHelper understands.
-
-        See ScriptHelper.handle_exception() for more details.
-        See sys.exc_info() for access to exception information
-        Description:
-        Return:
-            exceptionHandled: returns False if the exception was not understood
-        '''
-        return ScriptHelper.handle_exception(self)
-"""
 
