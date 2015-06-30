@@ -93,8 +93,6 @@ int main (int argc, char *argv[])
     Espa_global_meta_t *gmeta = NULL; /* pointer to global meta */
     Envi_header_t envi_hdr;   /* output ENVI header information */
 
-    printf ("Starting spectral indices processing ...\n");
-
     /* Read the command-line arguments */
     retval = get_args (argc, argv, &xml_infile, &toa_flag, &ndvi_flag,
         &ndmi_flag, &nbr_flag, &nbr2_flag, &savi_flag, &msavi_flag, &evi_flag,
@@ -103,6 +101,8 @@ int main (int argc, char *argv[])
     {   /* get_args already printed the error message */
         exit (ERROR);
     }
+
+    printf ("Starting spectral_indices version %s ...\n", INDEX_VERSION);
 
     /* Provide user information if verbose is turned on */
     if (verbose)
@@ -700,16 +700,17 @@ Date        Programmer       Reason
 --------    ---------------  -------------------------------------
 4/6/2013    Gail Schmidt     Original Development
 2/14/2014   Gail Schmidt     Modified to support TOA vs. SR input bands
+6/30/2015     Gail Schmidt     Updated to support --version cmd line arg
 
 NOTES:
 ******************************************************************************/
 void usage ()
 {
-    printf ("spectral_indices produces the desired spectral index products "
+    printf ("spectral_indices %s produces the desired spectral index products "
             "for the input surface reflectance or TOA reflectance bands. The "
             "options include NDVI, EVI, SAVI, MSAVI, NDMI (also known as NDWI "
             "or NDII), NBR, and NBR2. The user may specify one, some, or all "
-            "of the supported indices for output.\n\n");
+            "of the supported indices for output.\n\n", INDEX_VERSION);
     printf ("usage: spectral_indices "
             "--xml=input_xml_filename [--toa] "
             "[--ndvi] [--evi] [--savi] [--msavi] [--ndmi] [--nbr] [--nbr2] "
@@ -739,6 +740,31 @@ void usage ()
     printf ("\nExample: spectral_indices "
             "--xml=LT50400331995173AAA02.xml "
             "--ndvi --ndmi --nbr --evi "
-            "--verbose\n");
+            "--verbose\n\n");
+
+    printf ("spectral_indices --version prints the version information for "
+        "this application\n");
+    printf ("spectral_indices --help prints the usage information for this "
+        "application\n");
 }
 
+
+/******************************************************************************
+MODULE:  version
+
+PURPOSE:  Prints the version information for this application.
+
+RETURN VALUE:
+Type = None
+
+HISTORY:
+Date        Programmer       Reason
+---------   ---------------  -------------------------------------
+6/30/2015   Gail Schmidt     Original Development
+
+NOTES:
+******************************************************************************/
+void version ()
+{
+    printf ("spectral_indices version %s\n", INDEX_VERSION);
+}
