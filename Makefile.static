@@ -2,7 +2,7 @@
 # Makefile.static
 #
 # Project Name: spectral indicies
-# Makefile that will call 'Make X' in subdirectories.
+# Makefile that will invoke subsequent Makefiles in subdirectories.
 # Assumes the following make files exist:
 #	scripts/Makefile
 #	src/Makefile
