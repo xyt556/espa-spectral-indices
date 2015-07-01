@@ -53,7 +53,7 @@ class Cmd:  # #################################################################
         (status, output) = commands.getstatusoutput(cmd_string)
         return output
 
-    def add_param(self, name, *arg):
+    def add_param(self, name, arg=''):
         '''Allows a parameter to be added; optionally with an argument
 
         Parameters:

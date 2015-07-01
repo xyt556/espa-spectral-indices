@@ -17,39 +17,6 @@ Classes:
     Cfmask: Cloud Function Mask
     SR: Surface Reflectance
 -----     -----     -----     -----     -----     -----     -----     -----
-SI
------     -----     -----     -----     -----     -----     -----     -----
-Project Name: SI (Spectral Indices)
-Source: https://github.com/USGS-EROS/espa-spectral-indices
-License: NASA Open Source Agreement 1.3
-USGS Designation: EROS Science Processing Architecture (ESPA)
-Description:
-    Spectral Indices produces the desired spectral index products for the
-    input surface reflectance or TOA reflectance bands. The options
-    include: NDVI, EVI, SAVI, MSAVI, NDMI (also known as NDWI or NDII),
-    NBR, and NBR2. The user may specify one, some, or all of the
-    supported indices for output.
-
-Classes:
-    Cmd
-    ScriptArgParser
-    ScriptHelper (Version:0.0.1)
-    SI: Spectral Indices
-
-Script:
-    File: spectral_indices.py
-    Author: ngenetzky@usgs.gov
-    Purpose: Master script for creating spectral indices products.
-    Help/Usage/Version: See "spectral_indices.py --help"
-    Note: Script is based on source code from: do_spectral_indices.py
-        From the project: github.com/USGS-EROS/espa-spectral-indices/
-        Written by: gschmidt@usgs.gov
-
-Executables:
-    File: spectral_indices
-    Author:  gschmidt@usgs.gov
-    Help/Usage/Version: See "spectral_indices.py --help"
------     -----     -----     -----     -----     -----     -----     -----
 '''
 import sys
 import os
@@ -60,6 +27,7 @@ from Cmd import Cmd
 
 
 def get_logger():
+    '''Replicated from ESPA logger module'''
 
     # Setup the Logger with the proper configuration
     logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
@@ -121,7 +89,7 @@ class ScriptArgParser(argparse.ArgumentParser):  # ############################
 
 
 class ScriptHelper:  # ########################################################
-    '''Parse arguments, check conditions and execute the proper executable.
+    '''Parse request, build command line and return output from executable.
 
     Description:
         General functions and properties inherent to all scripts.
@@ -131,8 +99,7 @@ class ScriptHelper:  # ########################################################
     To-Do list to properly subclass:
         extend __init__. super.__init__() should be called at the beginning
         override build_parser(). See add_common_args().
-        extend setup(). See check_common_prereq(). (optional)
-            super.setup() should be called at the beginning
+        override get_exe_filename().
         override build_cmd_line(). See build_cmd_line().
         extend handle_exception(). (optional)
     '''
@@ -144,9 +111,7 @@ class ScriptHelper:  # ########################################################
 
         To-Do for subclass:
             Extend. super.__init__() should be called at the beginning
-            define the following instance variables:
-                title: title of its module to be used in log statements
-                exe_filename:
+                Define the instance variables.
 
         Instance Variables:
             Logger: logs info, error, fatal and other messages (from logging).
@@ -157,10 +122,6 @@ class ScriptHelper:  # ########################################################
 
         Instance Variables defined by subprogram:
             title: A title that describes all executables in the class.
-            exe_filename: filename of executable to be called should be
-                defined in __init__() if possible. Otherwise a function
-                get_exe_filename should be defined that will determine
-                which exe will be used.
             description: A description for all executables in the class.
         '''
         self.logger = logging.getLogger(__name__)
@@ -169,14 +130,15 @@ class ScriptHelper:  # ########################################################
         self.config = None
         # Should be defined by sub-class
         self.title = None
-        self.exe_filename = None
         self.description = None
         # Attempt to Pre-Parse XML so satellite can be used in logic
 
     class NO_ACTION_REQUESTED(Exception):
+        '''The script will perform no action with the current input'''
         pass
 
     class INVALID_FILE(Exception):
+        '''File supplied does not satisfy requirements'''
         def __init__(self, name, recieved, *args):
             self.name = name
             self.recieved = recieved
@@ -193,10 +155,7 @@ class ScriptHelper:  # ########################################################
         pass
 
     class EXECUTABLE_NOT_DEFINED(Exception):
-        '''exe_filename has been requested before being defined.
-
-        Should either be defined in __init__() or in get_exe_filename()
-        '''
+        '''exe_filename has been requested before being defined.'''
         pass
 
     def get_config_from_xml(self, xml_filename):
@@ -217,8 +176,8 @@ class ScriptHelper:  # ########################################################
         xml = metadata_api.parse(xml_filename, silence=True)
         global_metadata = xml.get_global_metadata()
         self.config['satellite'] = global_metadata.get_satellite()
-        # self.config['instrument'] = global_metadata.get_instrument()
-        # self.config['date'] = xml_filename[9:16]
+        self.config['instrument'] = global_metadata.get_instrument()
+        self.config['date'] = xml_filename[9:16]
         del global_metadata  # Explicitly release memory from xml object
         del xml  # Explicitly release memory from xml object
 
@@ -231,8 +190,8 @@ class ScriptHelper:  # ########################################################
         Postcondition:
             returns is_landsat8
         Raises:
-            INVALID_SUBCLASS if fail Precondition (1)
-            INVALID_SATELLITE_XML if fail Precondition (2)
+            ScriptHelper.INVALID_SUBCLASS if fail Precondition (1)
+            ScriptHelper.INVALID_SATELLITE_XML if fail Precondition (2)
         '''
         try:
             if config['satellite'] in ['LANDSAT_8']:
@@ -308,14 +267,10 @@ class ScriptHelper:  # ########################################################
     def parse_only_xml(self, list_ignored=False):
         '''Will only parse --xml XML_FILENAME from cmdline.
 
-        See get_config_from_xml() and  get_exe_filename() for additional
-            pre and post conditions.
-
         Precondition:
             '--xml FILENAME' exists in command line arguments
         Postcondition:
             self.args.xml_filename exists
-
         '''
 
         # Try to parse out the XML so the exe can be determined
@@ -355,9 +310,10 @@ class ScriptHelper:  # ########################################################
             For additional help specify the xml with the help parameter
         '''
         try:
-            self.parse_only_xml()
-            self.get_config_from_xml(self.args.xml_filename)
-            self.get_exe_filename()
+            if(self.get_exe_filename() is None):
+                self.parse_only_xml()
+                self.get_config_from_xml(self.args.xml_filename)
+
             msg = (('{2} {3}\n{4}'
                     '\n\n-----     {0} {1}     -----\n'
                     'Help from executables under this script:\n\n{5}'
@@ -404,7 +360,7 @@ class ScriptHelper:  # ########################################################
             version_msg = cmd.execute()
             return version_msg
         except Cmd.INVALID_EXECUTABLE:
-            raise ScriptHelper.EXECUTABLE_NOT_DEFINED
+            raise
         except Cmd.EXECUTE_ERROR:
             return ''  # If version can't be obtained then leave it empty
         else:
@@ -428,7 +384,7 @@ class ScriptHelper:  # ########################################################
             help_msg = cmd.get_help()
             return help_msg
         except Cmd.INVALID_EXECUTABLE:
-            raise ScriptHelper.EXECUTABLE_NOT_DEFINED
+            raise
         except Cmd.EXECUTE_ERROR as e:
             return e.args[0]  # Message should contain Stdout, but also Stderr
         else:
@@ -439,15 +395,15 @@ class ScriptHelper:  # ########################################################
 
         Description:
         Raises:
-            INVALID_FILE (Filetype/Description, received filename)
+            ScriptHelper.INVALID_FILE (Filetype/Description, received filename)
         '''
         if check_xml:
 
             # Verify that the XML filename provided is not an empty string
             # and that the file can be accessed
             if not os.path.isfile(self.args.xml_filename):
-                raise Cmd.INVALID_FILE(name='XML',
-                                       recieved=self.args.xml_filename)
+                raise (ScriptHelper.INVALID_FILE(
+                       name='XML', recieved=self.args.xml_filename))
         return True
 
     def get_execute_header(self):
@@ -492,7 +448,7 @@ class ScriptHelper:  # ########################################################
         SubClass Note:
             If this method is not overridden it will raise exception.
         Raises:
-            INVALID_SUBCLASS
+            ScriptHelper.INVALID_SUBCLASS
         '''
         raise ScriptHelper.INVALID_SUBCLASS
 
@@ -514,22 +470,14 @@ class ScriptHelper:  # ########################################################
             sys.exit(0)
 
     def get_exe_filename(self):  # SubClass should override.
-        '''Should return the name of the executable.
+        '''Should return the name of the executable or None.
 
-        Precondition:
-            self.exe_filename exists
-        Postcondition:
-            returns self.exe_filename
         To-Do for subclass:
-            Override if exe_filename can not be determined before parsing
-                arguments
+            Override. Return string literal, possibly based on conditions.
         Raises:
-            EXECUTABLE_NOT_DEFINED
+            ScriptHelper.INVALID_SUBCLASS
         '''
-        if self.exe_filename:
-            return self.exe_filename
-        else:
-            raise ScriptHelper.EXECUTABLE_NOT_DEFINED
+        raise ScriptHelper.INVALID_SUBCLASS
 
     def build_cmd_line(self):  # SubClass should override.
         '''Builds a Cmd object that can be executed to run the executable.
@@ -540,7 +488,7 @@ class ScriptHelper:  # ########################################################
         SubClass Note:
             If this method is not overridden it will raise exception.
         Raises:
-            INVALID_SUBCLASS
+            ScriptHelper.INVALID_SUBCLASS
         '''
         raise ScriptHelper.INVALID_SUBCLASS
 
@@ -633,16 +581,14 @@ class NameOfModule(ScriptHelper):
     __version__ = '0.0.1 (June 2015)'
     def __init__(self):
         ScriptHelper.__init__(self)
-        self.exe_filename = 'name_of_executable'  # None = determined later
         self.title = 'Title_Of_Executable'
         self.description = ('''description_of_executable''')
 
-        # Insert_Code_After_Here
 
     def build_parser(self):
         '''See ScriptHelper.build_parser() for more details'''
 
-        parser = argparse.ArgumentParser(description=self.description)
+        parser = ScriptArgParser(description=self.description)
 
         # Required parameters
         parser = ScriptHelper.add_common_args(parser, xml=True)
@@ -655,7 +601,7 @@ class NameOfModule(ScriptHelper):
 
         # Common command line arguments
         parser = ScriptHelper.add_common_args(parser,
-                                                debug=False, verbose=False)
+                                              debug=False, verbose=False)
 
     def build_cmd_line(self):
         '''See ScriptHelper.build_cmd_line() for more details'''
@@ -671,9 +617,10 @@ class NameOfModule(ScriptHelper):
 
         See ScriptHelper.handle_exception() for more details.
         See sys.exc_info() for access to exception information
-        Description:
-        Return:
-            exceptionHandled: returns False if the exception was not understood
+        Precondition:
+            Called within the except block of a try/except.
+        Postcondition:
+            Returns: False if the exception was not understood
         '''
         return ScriptHelper.handle_exception(self)
 """

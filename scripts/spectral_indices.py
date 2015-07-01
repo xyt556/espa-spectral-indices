@@ -28,10 +28,7 @@ Executables:
 -----     -----     -----     -----     -----     -----     -----     -----
 '''
 import sys
-import os
-import argparse
 import logging
-import commands
 import metadata_api
 from Cmd import Cmd
 from ScriptHelper import ScriptHelper, ScriptArgParser
@@ -57,7 +54,6 @@ class SI(ScriptHelper):  # ####################################################
 
     def __init__(self):
         ScriptHelper.__init__(self)
-        self.exe_filename = 'spectral_indices'
         self.title = 'Spectral Indices'
         self.description = ('''
         spectral_indices produces the desired spectral index products for the
@@ -69,8 +65,7 @@ class SI(ScriptHelper):  # ####################################################
 
     def build_parser(self):
         '''See ScriptHelper.build_parser() for more details'''
-        self.parser = ScriptArgParser(description=self.description,
-                                      add_help=True)
+        self.parser = ScriptArgParser(description=self.description)
         self.parser = ScriptHelper.add_common_args(self.parser, xml=True)
 
         # Additional parameters
@@ -118,9 +113,12 @@ class SI(ScriptHelper):  # ####################################################
         self.parser = ScriptHelper.add_common_args(self.parser,
                                                    debug=False, verbose=True)
 
-    def build_cmd_line(self):
-        '''See ScriptHelper.build_cmd_line() for more details'''
+    def check_product_requested(self):
+        '''Ensures that an SI product was requested
 
+        Raises:
+            ScriptHelper.NO_ACTION_REQUESTED
+        '''
         # TODO - Replace with argparse group
         if (not self.args.ndvi and
                 not self.args.ndmi and
@@ -133,7 +131,12 @@ class SI(ScriptHelper):  # ####################################################
                                                    ' product specified to'
                                                    ' be processed')
 
-        self.cmd = Cmd(self.exe_filename)
+    def build_cmd_line(self):
+        '''See ScriptHelper.build_cmd_line() for more details'''
+        self.check_common_prereq(check_xml=True)
+        self.check_product_requested()
+
+        self.cmd = Cmd(self.get_exe_filename())
         self.cmd.add_param('--xml', self.args.xml_filename)
 
         if self.args.verbose:
@@ -172,8 +175,11 @@ class SI(ScriptHelper):  # ####################################################
         return ScriptHelper.handle_exception(self)
 
     def get_executables_version(self):
-        return SI.__version__  # Hardcode Version
-        # return ScriptHelper.get_executables_version(self)
+        long_version = ScriptHelper.get_executables_version(self)
+        return long_version
+
+    def get_exe_filename(self):
+        return 'spectral_indices'
 
 
 def main():
