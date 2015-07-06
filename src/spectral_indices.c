@@ -736,7 +736,6 @@ void usage ()
     printf ("    -nbr2: process the normalized burn ratio 2 (NBR2) product\n");
     printf ("    -verbose: should intermediate messages be printed? (default "
             "is false)\n");
-    printf ("\nspectral_indices --help will print the usage statement\n");
     printf ("\nExample: spectral_indices "
             "--xml=LT50400331995173AAA02.xml "
             "--ndvi --ndmi --nbr --evi "
