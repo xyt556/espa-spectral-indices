@@ -29,7 +29,6 @@ Executables:
 '''
 import sys
 import logging
-import metadata_api
 from Cmd import Cmd
 from ScriptHelper import ScriptHelper, ScriptArgParser
 
@@ -50,7 +49,6 @@ class SI(ScriptHelper):  # ####################################################
     '''Parse request, build command line and return output from executable.
     '''
     __title__ = 'Spectral Indices'
-    __version__ = '2.1.0'
 
     def __init__(self):
         ScriptHelper.__init__(self)
@@ -111,7 +109,9 @@ class SI(ScriptHelper):  # ####################################################
 
         # Common command line arguments
         self.parser = ScriptHelper.add_common_args(self.parser,
-                                                   debug=False, verbose=True)
+                                                   debug=False,
+                                                   verbose=True,
+                                                   version=True)
 
     def check_product_requested(self):
         '''Ensures that an SI product was requested
@@ -175,8 +175,9 @@ class SI(ScriptHelper):  # ####################################################
         return ScriptHelper.handle_exception(self)
 
     def get_executables_version(self):
-        long_version = ScriptHelper.get_executables_version(self)
-        return long_version
+        string_long_version = ScriptHelper.get_executables_version(self)
+        list_long_version = string_long_version.split(' ')
+        return list_long_version[2]  # Expect "NAME version x.x.x
 
     def get_exe_filename(self):
         return 'spectral_indices'

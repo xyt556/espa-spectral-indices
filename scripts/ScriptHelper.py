@@ -9,20 +9,14 @@ License: NASA Open Source Agreement 1.3
 USGS Designation: EROS Science Processing Architecture (ESPA)
 
 Classes:
-    Cmd
     ScriptArgParser
-    ScriptHelper (Version:0.0.1)
-    SI: Spectral Indices (Version:2.1.0)
-    SWE: Surface Water Extent
-    Cfmask: Cloud Function Mask
-    SR: Surface Reflectance
+    ScriptHelper
 -----     -----     -----     -----     -----     -----     -----     -----
 '''
 import sys
 import os
 import argparse
 import logging
-import metadata_api
 from Cmd import Cmd
 
 
@@ -104,7 +98,7 @@ class ScriptHelper:  # ########################################################
         extend handle_exception(). (optional)
     '''
     __title__ = 'Script Helper'
-    __version__ = '0.0.1 (July 2015)'
+    __version__ = '0.1.0'
 
     def __init__(self):
         '''Create an instance of Script Helper
@@ -117,7 +111,6 @@ class ScriptHelper:  # ########################################################
             Logger: logs info, error, fatal and other messages (from logging).
             args: defined by parse_arguments().
             cmd: defined by build_cmd_line()
-            config: defined by get_config_from_xml()
             parser: defined by build_parser()
 
         Instance Variables defined by subprogram:
@@ -127,7 +120,6 @@ class ScriptHelper:  # ########################################################
         self.logger = logging.getLogger(__name__)
         self.args = None
         self.cmd = None
-        self.config = None
         # Should be defined by sub-class
         self.title = None
         self.description = None
@@ -158,55 +150,19 @@ class ScriptHelper:  # ########################################################
         '''exe_filename has been requested before being defined.'''
         pass
 
-    def get_config_from_xml(self, xml_filename):
-        '''Stores desired information into config(dict) from xml file
-
-        Description:
-            Provides access to information from xml file.
-        Precondition:
-            xml_filename is a string that refers to a xmlfile in the current
-                working directory
-            XML contains the following item:
-                <global_metadata><satellite>
-        Postcondition:
-            'satellite' is in dictionary self.config
-        '''
-
-        self.config = {}  # Empty dictionary
-        xml = metadata_api.parse(xml_filename, silence=True)
-        global_metadata = xml.get_global_metadata()
-        self.config['satellite'] = global_metadata.get_satellite()
-        self.config['instrument'] = global_metadata.get_instrument()
-        self.config['date'] = xml_filename[9:16]
-        del global_metadata  # Explicitly release memory from xml object
-        del xml  # Explicitly release memory from xml object
-
     def is_landsat8(self, config):
-        '''Reads config dictionary for satellite name, checks if L8.
+        '''Reads xml_filename for satellitecode, checks if L8.
         Precondition:
-            (1) 'satellite' is in config
-            (2) config['satellite'] is in
-                ['LANDSAT_4','LANDSAT_5','LANDSAT_7','LANDSAT_8']
+            (1) satellite_code is the first 3 characters of input product id
         Postcondition:
-            returns is_landsat8
-        Raises:
-            ScriptHelper.INVALID_SUBCLASS if fail Precondition (1)
-            ScriptHelper.INVALID_SATELLITE_XML if fail Precondition (2)
+            returns True if this satellite_code is in ['lc8','lo8']
         '''
-        try:
-            if config['satellite'] in ['LANDSAT_8']:
-                return True
-            elif config['satellite'] in ['LANDSAT_4',
-                                         'LANDSAT_5',
-                                         'LANDSAT_7']:
-                return False
-            else:
-                raise ScriptHelper.INVALID_SATELLITE_XML(config['satellite'])
-        except TypeError:
-            raise
-            # In one scenario TypeError is raised for this particular issue:
-            # raise ScriptHelper.INVALID_SUBCLASS('is_landsat8 must be called'
-            #                                    ' after get_config_from_xml')
+        satellite_code = self.xml_filename[0:2]
+        l8_prefixes = ['lc8', 'lo8']
+        if l8_prefixes in satellite_code:
+            return True
+        else:
+            return False
 
     @staticmethod
     def str_to_bool(string):
@@ -264,6 +220,19 @@ class ScriptHelper:  # ########################################################
                                       ' be printed? (default is False)'))
         return parser
 
+    def parse_only_version(self, list_ignored=False):
+        '''Will only parse --version from cmdline.
+
+        Precondition:
+        Postcondition:
+            Returns True if '--version' exists in command line arguments.
+            Returns False if it does not.
+        '''
+        parse_version = ScriptArgParser(add_help=False)
+        parse_version = self.add_common_args(parse_version, version=True)
+        (temp, extra_args) = parse_version.parse_known_args()
+        return temp.version
+
     def parse_only_xml(self, list_ignored=False):
         '''Will only parse --xml XML_FILENAME from cmdline.
 
@@ -272,19 +241,41 @@ class ScriptHelper:  # ########################################################
         Postcondition:
             self.args.xml_filename exists
         '''
-
         # Try to parse out the XML so the exe can be determined
         parse_xml = ScriptArgParser(add_help=False)
         parse_xml = self.add_common_args(parse_xml, xml=True)
         (temp, extra_args) = parse_xml.parse_known_args()
 
+        if(self.args is None):
+            self.args = temp  # Args are empty. thus overwrite
+        else:
+            self.args.xml_filename = temp.xml_filename
+
+    def print_version_message(self):
+        '''Prints executables name+version then ScriptHelper+version
+
+        Precondition:
+            (1) exe_filename can be obtained from get_exe_filename()
+
+        Postcondition:
+            executable and script helper name and version will be printed.
+
+        Side effects of violating preconditions:.
+        If (1) is False. Only Script Helper name and version will be printed.
+        '''
         try:
-            if(self.args is None):
-                self.args = temp  # Args are empty. thus overwrite
-            else:
-                self.args.xml_filename = temp.xml_filename
-        except:
-            raise
+            if(self.get_exe_filename() is None):
+                self.parse_only_xml()
+            msg = ('{0} {1}\n{2} {3}'
+                   .format(self.get_exe_filename(),
+                           self.get_executables_version(),
+                           ScriptHelper.__title__,
+                           ScriptHelper.__version__))
+        except ScriptArgParser.INVALID_ARGUMENT:
+            msg = ('{0} {1}'
+                   .format(ScriptHelper.__title__,
+                           ScriptHelper.__version__))
+        print msg
 
     def print_custom_help(self):
         '''Used to override default help so underlying exe's help can be shown
@@ -312,7 +303,6 @@ class ScriptHelper:  # ########################################################
         try:
             if(self.get_exe_filename() is None):
                 self.parse_only_xml()
-                self.get_config_from_xml(self.args.xml_filename)
 
             msg = (('{2} {3}\n{4}'
                     '\n\n-----     {0} {1}     -----\n'
@@ -323,7 +313,7 @@ class ScriptHelper:  # ########################################################
                             # Version of the underlying executable
                             self.get_executables_version(),
                             # Name of the Sub Class
-                            self.__class__.__title__,
+                            self.title,
                             # Version of the Sub Class
                             self.__class__.__version__,
                             self.parser.format_help(),
@@ -337,7 +327,7 @@ class ScriptHelper:  # ########################################################
                                              # Name of the Sub Class
                                              self.__class__.__title__,
                                              # Version of the Sub Class
-                                             self.__class__.__version__,
+                                             self.__class__.__title__,
                                              self.parser.format_help())
         print msg
 
@@ -349,8 +339,9 @@ class ScriptHelper:  # ########################################################
                 executable that exists in the path
             (2) application exits with success
         Postcondition:
-            If (2) fails : returns standard output
+            If (2) fails: returns standard output
             If (2) passes: returns ''
+            If (1) fails Cmd.INVALID_EXECUTABLE is raised
         Raises
             Cmd.INVALID_EXECUTABLE if (1) is failed
         '''
@@ -452,13 +443,34 @@ class ScriptHelper:  # ########################################################
         '''
         raise ScriptHelper.INVALID_SUBCLASS
 
-    def parse_arguments(self):
+    def parse_arguments(self, parse_version=True):
         '''Stores arguments specified in build_parser() to self.args
 
-            If '--help' or '-h' is specified as an argument the request is
-            handled here by printing according to print_custom_help().
-            Invalid arguments will also show help along with error message.
+        Precondition:
+            (1) No invalid arguments are specified.
+            (2) '--help' does not exists in command line arguments
+            (3) '--version' does not exist in command line arguments
+                or parse_version is False
+            (4) self.parser is a valid instance of ScriptArgParser
+
+        Postcondition:
+            self.args will exist if (1,2,3,4) are true.
+
+        Side effects of violating preconditions:
+        (1) is False. If an Invalid arguments is entered, then it will show the
+            error message and also show help.
+
+        (2) is False. If '--help' or '-h' is specified as an argument the
+            request is handled by printing according to print_custom_help()
+            and then exits the script.
+
+        (3) is False. If '--version' is specified as an argument the request is
+            handled by printing according to print_version_message() and then
+            exits the script.
         '''
+        if(self.parse_only_version() and parse_version):
+            self.print_version_message()
+            sys.exit(0)
         try:
             self.args = self.parser.parse_args()
         except ScriptArgParser.INVALID_ARGUMENT as e:
@@ -624,4 +636,69 @@ class NameOfModule(ScriptHelper):
         '''
         return ScriptHelper.handle_exception(self)
 """
+
+""" Remove functions to remove metadata_api dependency
+
+# import metadata_api
+if 'metadata_api' in sys.modules:
+    use_metadata_api = True
+else:
+    use_metadata_api = False
+
+self.config = None
+ 
+def get_config_from_xml(self, xml_filename):
+    '''Stores desired information into config(dict) from xml file
+
+    Description:
+        Provides access to information from xml file.
+    Precondition:
+        (1) xml_filename is a string that refers to a xmlfile in the
+            current working directory
+        (2) XML contains the following items:
+            <global_metadata><satellite>
+            <global_metadata><instrument>
+    Postcondition:
+        'satellite' is in dictionary self.config
+        'instrument' is in dictionary self.config
+    '''
+    self.config = {}  # Empty dictionary
+    xml = metadata_api.parse(xml_filename, silence=True)
+    global_metadata = xml.get_global_metadata()
+    self.config['satellite'] = global_metadata.get_satellite()
+    self.config['instrument'] = global_metadata.get_instrument()
+    self.config['date'] = xml_filename[9:16]
+    del global_metadata  # Explicitly release memory from xml object
+    del xml  # Explicitly release memory from xml object
+
+def is_landsat8(self, config):
+    '''Reads config dictionary for satellite name, checks if L8.
+    Precondition:
+        (1) 'satellite' is in config
+        (2) config['satellite'] is in
+            ['LANDSAT_4','LANDSAT_5','LANDSAT_7','LANDSAT_8']
+    Postcondition:
+        returns is_landsat8
+    Raises:
+        ScriptHelper.INVALID_SUBCLASS if fail Precondition (1)
+        ScriptHelper.INVALID_SATELLITE_XML if fail Precondition (2)
+    '''
+    try:
+        if config['satellite'] in ['LANDSAT_8']:
+            return True
+        elif config['satellite'] in ['LANDSAT_4',
+                                     'LANDSAT_5',
+                                     'LANDSAT_7']:
+            return False
+        else:
+            raise ScriptHelper.INVALID_SATELLITE_XML(config['satellite'])
+    except TypeError:
+        raise
+        # In one scenario TypeError is raised for this particular issue:
+        # raise ScriptHelper.INVALID_SUBCLASS('is_landsat8 must be called'
+        #                                    ' after get_config_from_xml')
+"""
+
+
+
 
