@@ -1,7 +1,8 @@
 #! /usr/bin/env python
+
 '''
     PURPOSE: Determine which executable to run and then passes all arguments
-        through to the appropriate script.
+             through to the appropriate script.
 
     PROJECT: Land Satellites Data Systems Science Research and Development
              (LSRD) at the USGS EROS
@@ -18,6 +19,7 @@
         All output from the underlying script will be given to the logger as an
             info message.
 '''
+
 import os
 import sys
 import logging
