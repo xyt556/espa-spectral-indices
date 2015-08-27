@@ -19,25 +19,14 @@
             info message.
 '''
 import os
-import logging
 import sys
+import logging
 import commands
-
-
-def get_logger():
-        '''Replicated from ESPA logger module'''
-        # Setup the Logger with the proper configuration
-        logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
-                                    ' %(levelname)-8s'
-                                    ' %(filename)s:%(lineno)d:'
-                                    '%(funcName)s -- %(message)s'),
-                            datefmt='%Y-%m-%d %H:%M:%S',
-                            level=logging.INFO)
-        return logging.getLogger(__name__)
 
 
 class ExecuteError(Exception):
     '''Raised when command in execute_cmd returns with error'''
+
     def __init__(self, message, *args):
         self.message = message
         Exception.__init__(self, message, *args)
@@ -52,6 +41,7 @@ def execute_cmd(cmd_string):
         Returns:
             output:The stdout and/or stderr from the executed command.
         '''
+
         (status, output) = commands.getstatusoutput(cmd_string)
 
         if status < 0:
@@ -77,27 +67,46 @@ def execute_cmd(cmd_string):
         return output
 
 
-def get_executable():
+def get_science_application_name():
     '''Returns name of executable that needs to be called'''
+
     return 'spectral_indices'
 
 
 def main():
     '''Determines executable, and calls it with all input arguments '''
-    logger = get_logger()
 
-    cmd = [get_executable()]
-    cmd.extend(sys.argv[1:])  # Pass all arguments through
+    # Setup the default logger format and level.  Log to STDOUT.
+    logging.basicConfig(format=('%(asctime)s.%(msecs)03d %(process)d'
+                                ' %(levelname)-8s'
+                                ' %(filename)s:%(lineno)d:'
+                                '%(funcName)s -- %(message)s'),
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO,
+                        stream=sys.stdout)
+
+    # Get the logger
+    logger = logging.getLogger(__name__)
+
+    # Get the science application
+    cmd = [get_science_application_name()]
+    # Pass all arguments through to the since application
+    cmd.extend(sys.argv[1:])
+
+    # Convert the list to a string
     cmd_string = ' '.join(cmd)
     try:
-        logger.info('>>'+cmd_string)
+        logger.info(' '.join(['EXECUTING SCIENCE APPLICATION:',
+                              cmd_string]))
         output = execute_cmd(cmd_string)
 
         if len(output) > 0:
             logger.info('\n{0}'.format(output))
-    except ExecuteError as e:
-        logger.exception(e.message)
-        sys.exit(1)
+    except ExecuteError:
+        logger.exception('Error running {0}.'
+                         'Processing will terminate.'
+                         .format(os.path.basename(__file__)))
+        raise  # Re-raise so exception message will be shown.
 
 if __name__ == '__main__':
     main()
