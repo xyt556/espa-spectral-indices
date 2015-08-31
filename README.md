@@ -1,5 +1,7 @@
-## Spectral Indices Version 2.1.0 Release Notes
-Release Date: December 3, 2014
+## Spectral Indices Version 2.2.0 Release Notes
+Release Date: October XX, 2015
+
+See git tag [version_2.2.0]
 
 The spectral indices project contains application source code for producing spectral index products.  It currently supports Landsat 4-8 using a single application.
 
@@ -14,66 +16,58 @@ This application processes Landsat surface reflectance products or TOA reflectan
 * MSAVI - Modified Soil Adjusted Vegetation Index (soil adjustment factor is "self-adjustable" so as to increase the SAVI vegetation sensitivity by increasing the dynamic range and further reducing the soil background effects) 
 * EVI - Enhanced Vegetation Index 
 
-This project is hosted by the US Geological Survey (USGS) Earth Resources Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science Research and Development (LSRD) Project. For questions regarding this source code, please contact the Landsat Contact Us page and specify USGS CDR/ECV in the "Regarding" section. https://landsat.usgs.gov/contactus.php 
+This project is provided by the US Geological Survey (USGS) Earth Resources Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science Research and Development (LSRD) Project. For questions regarding products produced by this source code, please contact the Landsat Contact Us page and specify USGS CDR/ECV in the "Regarding" section. https://landsat.usgs.gov/contactus.php
 
-### Downloads
-Spectral Indices source code
-
-    git clone https://github.com/USGS-EROS/espa-spectral-indices.git
-
-See git tag [version_2.1.0]
-
-### Installation
-  * Install dependent libraries - ESPA product formatter (https://github.com/USGS-EROS/espa-product-formatter)
-  * Set up environment variables.  Can create an environment shell file or add the following to your bash shell.  For C shell, use 'setenv VAR "directory"'.
-```
-    export PREFIX="path_to_directory_for_spectral_indices_build_data"
-```
-
-  * Download (from Github USGS-EROS spectral-indices project) and install source files. The following build will create an executable file under $PREFIX/bin: spectral_indices (tested in Linux with the gcc compiler). It will also copy the Python scripts for running spectral indices from the scripts directory up the the $PREFIX/bin directory.
-```
-cd src
-make
-make install
-make clean
-```
-
-  * Test - Download Landsat surface reflectance products or top of atmosphere products from ESPA.  Then run the spectral\_indices binary or do\_spectral\_indices.py script.  User information is available via the --help command-line argument.
-```
-spectral_indices --help
-do_spectral_indices.py --help
-```
-
-  * Check output - There will be a separate ESPA file generated for each of the spectral index products specified on the command line.  In addition each band should be added to the input XML file.
-```
-{scene_name}_ndvi.bin
-{scene_name}_ndmi.bin
-{scene_name}_nbr.bin
-{scene_name}_nbr2.bin
-{scene_name}_savi.bin
-{scene_name}_evi.bin
-```
+## Installation
 
 ### Dependencies
-  * ESPA raw binary and ESPA common libraries from ESPA product formatter and associated dependencies
-  * XML2 library
+* ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
+* Python 2.7
 
-### Data Preprocessing
-This version of the spectral indices application requires the input Landsat products to be in the ESPA internal file format.
+### Environment Variables
+* Required for building this software
+```
+export PREFIX="path_to_Installation_Directory"
+export XML2INC="path_to_LIBXML2_include_files"
+export XML2LIB="path_to_LIBXML2_libraries"
+export ESPAINC="path_to_ESPA_PRODUCT_FORMATTER_include_files"
+export ESPALIB="path_to_ESPA_PRODUCT_FORMATTER_libraries"
+```
+
+### Build Steps
+* Clone the repository and replace the defaulted version(master) with this
+  version of the software
+```
+git clone https://github.com/USGS-EROS/espa-spectral-indices.git
+cd espa-spectral-indices
+git checkout version_<version>
+```
+* Build and install the software
+```
+make
+make install
+```
+
+## Usage
+See `spectral_indices.py --help` for command line details.
+
+### Environment Variables
+* PATH - Must be updated to include `$PREFIX/espa-spectral-indices/bin`
+
+### Data Processing Requirements
+This version of the Spectral Indices application requires the input products to be in the ESPA internal file format.
+
+The following input data are required to generate the spectral indicies products:
+* Top of Atmosphere Reflectance, <b>or</b>
+* Surface Reflectance
+
+These products can be generated using the [LEDAPS](https://github.com/USGS-EROS/espa-surface-reflectance) or [L8_SR](https://github.com/USGS-EROS/espa-surface-reflectance) software found in our [espa-surface-reflectance](https://github.com/USGS-EROS/espa-surface-reflectance) project.  Or through our ondemand processing system [ESPA](https://espa.cr.usgs.gov), be sure to select the ENVI output format.
 
 ### Data Postprocessing
 After compiling the ESPA product formatter raw\_binary libraries and tools, the convert\_espa\_to\_gtif and convert\_espa\_to\_hdf command-line tools can be used to convert the ESPA internal file format to HDF or GeoTIFF.  Otherwise the data will remain in the ESPA internal file format, which includes each band in the ENVI file format (i.e. raw binary file with associated ENVI header file) and an overall XML metadata file.
 
-### Associated Scripts
-A python script exists in the scripts directory to assist in running the spectral indices application.  do\_spectral\_indices.py grabs the user-specified options and generates the desire spectral index products by calling the spectral\_indices executable.
-
-### Verification Data
-
-### User Manual
-
-### Product Guide
-
 ## Changes From Previous Version
-#### Updates on December 23, 2014 - USGS EROS
-  * src
-    1. Modified the spectral indices to process Landsat 8 products, OLI and OLI_TIRS.
+#### Updates on October XX, 2015 - USGS EROS
+  * Replaced do_spectral_indices.py with spectral_indices.py
+  * Enhanced Makefile's for build and installing the software
+  * Installation installs to $PREFIX/espa-spectral-indices
