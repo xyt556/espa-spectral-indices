@@ -7,11 +7,11 @@
 #	scripts/Makefile
 #	src/Makefile
 #------------------------------------------------------------------------------
+.PHONY: all install clean
 
-export ESPA_PROJECT = espa-spectral-indices
+include make.config
 
 MAKEFILE_NAME = Makefile
-STATIC_MAKEFILE_NAME = Makefile.static
 
 all:
 	echo "make all in scripts"; \
