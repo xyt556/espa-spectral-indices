@@ -16,7 +16,9 @@ This application processes Landsat surface reflectance products or TOA reflectan
 * MSAVI - Modified Soil Adjusted Vegetation Index (soil adjustment factor is "self-adjustable" so as to increase the SAVI vegetation sensitivity by increasing the dynamic range and further reducing the soil background effects) 
 * EVI - Enhanced Vegetation Index 
 
-This project is provided by the US Geological Survey (USGS) Earth Resources Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science Research and Development (LSRD) Project. For questions regarding products produced by this source code, please contact the Landsat Contact Us page and specify USGS CDR/ECV in the "Regarding" section. https://landsat.usgs.gov/contactus.php
+## Product Descriptions
+
+See the [Spectral Indices](http://landsat.usgs.gov/CDR_ECV.php) product guide for information about the index products.
 
 ## Release Notes
 * Replaced do_spectral_indices.py with spectral_indices.py
