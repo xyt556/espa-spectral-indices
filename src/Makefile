@@ -44,6 +44,7 @@ $(EXE): $(OBJ) $(INC)
 	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LIB)
 
 install: $(EXE)
+	install -d $(link_path)
 	install -d $(bin_install_path)
 	install -m 755 $(EXE) $(bin_install_path)
 	ln -sf ../$(project_name)/bin/$(EXE) $(link_path)/$(EXE)
