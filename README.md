@@ -22,6 +22,7 @@ See the [Spectral Indices](http://landsat.usgs.gov/CDR_ECV.php) product guide fo
 
 ## Release Notes
 * Replaced do_spectral_indices.py with spectral_indices.py
+* Added --version option to the command line
 * Enhanced Makefile's for build and installing the software
 * Installation installs to $PREFIX/espa-spectral-indices
 
@@ -29,7 +30,7 @@ See the [Spectral Indices](http://landsat.usgs.gov/CDR_ECV.php) product guide fo
 
 ### Dependencies
 * ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
-* Python 2.7
+* Python 2.7+
 
 ### Environment Variables
 * Required for building this software
