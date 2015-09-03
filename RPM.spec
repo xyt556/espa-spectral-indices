@@ -61,9 +61,9 @@ make install PREFIX=%{buildroot}/usr/local
 # ----------------------------------------------------------------------------
 %clean
 # Cleanup our cloned repository
-#rm -rf %{clonedname}
+rm -rf %{clonedname}
 # Cleanup our installation location
-#rm -rf %{buildroot}
+rm -rf %{buildroot}
 
 
 # ----------------------------------------------------------------------------
