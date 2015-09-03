@@ -7,7 +7,7 @@
 #	scripts/Makefile
 #	src/Makefile
 #------------------------------------------------------------------------------
-.PHONY: all install clean
+.PHONY: check-environment all install clean
 
 include make.config
 
@@ -30,4 +30,9 @@ clean:
         (cd scripts; $(MAKE) clean -f $(MAKEFILE_NAME));
 	echo "make clean in src"; \
         (cd src; $(MAKE) clean -f $(MAKEFILE_NAME));
+
+check-environment:
+ifndef PREFIX
+    $(error Environment variable PREFIX is not defined)
+endif
 
