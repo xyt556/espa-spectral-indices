@@ -19,7 +19,7 @@ all:
 	echo "make all in src"; \
         (cd src; $(MAKE) all -f $(MAKEFILE_NAME));
 
-install:
+install: check-environment
 	echo "make install in scripts"; \
         (cd scripts; $(MAKE) install -f $(MAKEFILE_NAME));
 	echo "make install in src"; \
