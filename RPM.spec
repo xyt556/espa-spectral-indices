@@ -77,9 +77,7 @@ make install PREFIX=%{buildroot}/usr/local
 # ----------------------------------------------------------------------------
 %changelog
 * Thu Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
-- Updated Makefile's for enhanced building and installation
-- Replaced do_spectral_indices.py with spectral_indices.py
-- Added --version option to the command line
+- Build for Oct 2015 release
 
 * Fri Jun 26 2015 William D Howe <whowe@usgs.gov>
 - Now using git hub and cleaned up comments
