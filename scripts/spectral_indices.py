@@ -35,38 +35,38 @@ class ExecuteError(Exception):
 
 
 def execute_cmd(cmd_string):
-        '''Execute a command line and return the terminal output
+    '''Execute a command line and return the terminal output
 
-        Raises:
-            ExecuteError (Stdout/Stderr)
+    Raises:
+        ExecuteError (Stdout/Stderr)
 
-        Returns:
-            output:The stdout and/or stderr from the executed command.
-        '''
+    Returns:
+        output:The stdout and/or stderr from the executed command.
+    '''
 
-        (status, output) = commands.getstatusoutput(cmd_string)
+    (status, output) = commands.getstatusoutput(cmd_string)
 
-        if status < 0:
-            message = ('Application terminated by signal [{0}]'
-                       .format(cmd_string))
-            if len(output) > 0:
-                message = ' Stdout/Stderr is: '.join([message, output])
-            raise ExecuteError(message)
+    if status < 0:
+        message = ('Application terminated by signal [{0}]'
+                   .format(cmd_string))
+        if len(output) > 0:
+            message = ' Stdout/Stderr is: '.join([message, output])
+        raise ExecuteError(message)
 
-        if status != 0:
-            message = 'Application failed to execute [{0}]'.format(cmd_string)
-            if len(output) > 0:
-                message = ' Stdout/Stderr is: '.join([message, output])
-            raise ExecuteError(message)
+    if status != 0:
+        message = 'Application failed to execute [{0}]'.format(cmd_string)
+        if len(output) > 0:
+            message = ' Stdout/Stderr is: '.join([message, output])
+        raise ExecuteError(message)
 
-        if os.WEXITSTATUS(status) != 0:
-            message = ('Application [{0}] returned error code [{1}]'
-                       .format(cmd_string, os.WEXITSTATUS(status)))
-            if len(output) > 0:
-                message = ' Stdout/Stderr is: '.join([message, output])
-            raise ExecuteError(message)
+    if os.WEXITSTATUS(status) != 0:
+        message = ('Application [{0}] returned error code [{1}]'
+                   .format(cmd_string, os.WEXITSTATUS(status)))
+        if len(output) > 0:
+            message = ' Stdout/Stderr is: '.join([message, output])
+        raise ExecuteError(message)
 
-        return output
+    return output
 
 
 def get_science_application_name():
@@ -113,4 +113,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
