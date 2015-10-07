@@ -18,7 +18,7 @@ EXTRA = $(build_type) -Wall -g -O2
 
 # Define the include files
 INC = common.h input.h output.h si.h
-INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC)
+INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC) -I${LZMAINC}
 NCFLAGS = $(EXTRA) $(INCDIR)
 
 # Define the source code and object files
@@ -32,7 +32,7 @@ OBJ = $(SRC:.c=.o)
 
 # Define the object libraries
 LIB   = -L$(ESPALIB) -l_espa_raw_binary -l_espa_common -L$(XML2LIB) -lxml2 \
-        -L${ZLIBLIB} -lz -lm
+        -L${LZMALIB} -llzma -L${ZLIBLIB} -lz -lm
 
 # Define the executable
 EXE = spectral_indices
