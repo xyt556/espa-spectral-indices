@@ -47,7 +47,8 @@ install: $(EXE)
 	install -d $(link_path)
 	install -d $(bin_install_path)
 	install -m 755 $(EXE) $(bin_install_path)
-	ln -sf ../$(project_name)/bin/$(EXE) $(link_path)/$(EXE)
+	ln -sf $(bin_install_path)/$(EXE) $(link_path)/$(EXE)
+#	ln -sf ../$(project_name)/bin/$(EXE) $(link_path)/$(EXE)
 
 clean:
 	$(RM) *.o $(EXE)

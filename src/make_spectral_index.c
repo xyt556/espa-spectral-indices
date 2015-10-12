@@ -239,9 +239,9 @@ MODULE:  make_evi
 
 PURPOSE:  Computes the enhanced vegetation index using the specified input
 bands.
-EVI = (nir - red) / (nir + C1 * red - C2 * blue + L)
-where C1 = 6, C2 = 7.5, and L = 1.0 (same coefficients used for the standard
-MODIS EVI product)
+EVI = G * ((nir - red) / (nir + C1 * red - C2 * blue + L))
+where C1 = 6, C2 = 7.5, L = 1.0, and G = 2.5 (same coefficients used for the
+standard MODIS EVI product)
 
 RETURN VALUE:
 Type = None
@@ -250,9 +250,10 @@ PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
 HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-4/6/2013     Gail Schmidt     Original Development
+Date          Programmer       Reason
+----------    ---------------  -------------------------------------
+4/6/2013      Gail Schmidt     Original Development
+10/12/2015    Gail Schmidt     Added gain factor of 2.5 for EVI
 
 NOTES:
   1. Input and output arrays are 1D arrays of size nlines * nsamps.
@@ -310,11 +311,11 @@ void make_evi
             else if (ratio < -1.0)
                 ratio = -1.0;
 
-            /* Scale to an int16 */
+            /* Apply the gain of 2.5 for the EVI and scale to an int16 */
             if (ratio >= 0.0)
-                evi[pix] = (int16) (ratio * FLOAT_TO_INT + 0.5);
+                evi[pix] = (int16) (2.5 * ratio * FLOAT_TO_INT + 0.5);
             else
-                evi[pix] = (int16) (ratio * FLOAT_TO_INT - 0.5);
+                evi[pix] = (int16) (2.5 * ratio * FLOAT_TO_INT - 0.5);
         }
     }
 }
