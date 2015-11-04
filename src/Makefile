@@ -14,7 +14,7 @@ include $(TOP)/make.config
 CC = gcc
 RM = rm
 EXTRA_OPTIONS = $(static_option) $(threading_options) $(profiling_options)
-EXTRA   = -Wall -g -O2 $(EXTRA_OPTIONS)
+EXTRA   = -Wall -O2 $(EXTRA_OPTIONS)
 
 # Define the include files
 INC = common.h input.h output.h si.h
@@ -36,7 +36,7 @@ NCFLAGS = $(EXTRA) $(INCDIR)
 EXLIB = -L$(ESPALIB) -l_espa_raw_binary -l_espa_common \
         -L$(XML2LIB) -lxml2 \
         -L$(LZMALIB) -llzma \
-        -L${ZLIBLIB} -lz -lm
+        -L${ZLIBLIB} -lz
 MATHLIB = -lm
 LOADLIB = $(EXLIB) $(MATHLIB)
 
