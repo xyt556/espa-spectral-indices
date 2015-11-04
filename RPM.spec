@@ -19,7 +19,7 @@ BuildArch:	x86_64
 Packager:	USGS EROS LSRD
 
 BuildRequires:	espa-common
-Requires:	espa-common >= 1.4.0
+Requires:	espa-common >= 1.5.0
 
 
 # ----------------------------------------------------------------------------
