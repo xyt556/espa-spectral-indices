@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------
 Name:		espa-spectral-indices
 Version:	2.3.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	ESPA Spectral Indices Software
 
 Group:		ESPA
@@ -76,9 +76,11 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
+* Wed Dec 02 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Changed release number for a recompile against the product formatter for Dec 2015 release
+
 * Wed Nov 04 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Build for Dec 2015 release
-
 * Thu Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Build for Oct 2015 release
 * Fri Jun 26 2015 William D Howe <whowe@usgs.gov>
