@@ -1,5 +1,5 @@
 ## Spectral Indices Version 2.3.0 Release Notes
-Release Date: October ??, 2015
+Release Date: December 22, 2015
 
 See git tag [version_2.3.0]
 
