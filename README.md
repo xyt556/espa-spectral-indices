@@ -1,7 +1,7 @@
-## Spectral Indices Version 2.2.0 Release Notes
-Release Date: September 23, 2015
+## Spectral Indices Version 2.3.0 Release Notes
+Release Date: October ??, 2015
 
-See git tag [version_2.2.0]
+See git tag [version_2.3.0]
 
 The spectral indices project contains application source code for producing spectral index products.  It currently supports Landsat 4-8 using a single application.
 
@@ -21,12 +21,8 @@ This application processes Landsat surface reflectance products or TOA reflectan
 See the [Spectral Indices](http://landsat.usgs.gov/CDR_ECV.php) product guide for information about the index products.
 
 ## Release Notes
-* Added --version option to the command line
-* Enhanced Makefile's for build and installing the software
-* Installation installs to $PREFIX/espa-spectral-indices
-* Updated to install in $PREFIX/bin vs. $BIN 
-* Modified the do_spectral_indices.py script to contain more generic classes for parsing command-line arguments, determine the satellite being processed, handle help/version information, logging, error handling, etc.  The new script will be named spectral_indices.py.  Common classes for script parsing and handling will be placed in a new project for Python libraries and made available for import.
-* Added RPM spec file for packaging
+* Modified the EVI algorithm to apply a gain factor of 2.5 to the ratio to
+  better match what is implemented in the MODIS EVI products.
 
 ## Installation
 
