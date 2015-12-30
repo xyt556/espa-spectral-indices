@@ -17,11 +17,6 @@ EXTRA = -Wall $(EXTRA_OPTIONS)
 
 # Define the include files
 INC = common.h input.h output.h si.h
-<<<<<<< HEAD
-INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC) -I${LZMAINC}
-NCFLAGS = $(EXTRA) $(INCDIR)
-=======
->>>>>>> remotes/origin/master
 
 # Define the source code and object files
 SRC = \
