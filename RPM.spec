@@ -6,8 +6,8 @@
 
 # ----------------------------------------------------------------------------
 Name:		espa-spectral-indices
-Version:	2.2.0
-Release:	1%{?dist}
+Version:	2.3.0
+Release:	2%{?dist}
 Summary:	ESPA Spectral Indices Software
 
 Group:		ESPA
@@ -19,7 +19,7 @@ BuildArch:	x86_64
 Packager:	USGS EROS LSRD
 
 BuildRequires:	espa-common
-Requires:	espa-common >= 1.4.0
+Requires:	espa-common >= 1.5.0
 
 
 # ----------------------------------------------------------------------------
@@ -29,7 +29,7 @@ Provides science application executables for generating spectral indice products
 
 # ----------------------------------------------------------------------------
 # Specify the repository tag/branch to clone and build from
-%define tagname dev_v2.2.0
+%define tagname dev_v2.3.0
 # Specify the name of the directory to clone into
 %define clonedname %{name}-%{tagname}
 
@@ -47,7 +47,7 @@ rm -rf %{clonedname}
 git clone --depth 1 --branch %{tagname} %{url} %{clonedname}
 # Build the applications
 cd %{clonedname}
-make BUILD_TYPE=-static
+make BUILD_STATIC=yes
 
 
 # ----------------------------------------------------------------------------
@@ -76,9 +76,13 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
+* Wed Dec 02 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Changed release number for a recompile against the product formatter for Dec 2015 release
+
+* Wed Nov 04 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Build for Dec 2015 release
 * Thu Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Build for Oct 2015 release
-
 * Fri Jun 26 2015 William D Howe <whowe@usgs.gov>
 - Now using git hub and cleaned up comments
 * Tue Apr 28 2015 Cory Turner <cbturner@usgs.gov>
