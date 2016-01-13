@@ -30,6 +30,9 @@ Date         Programmer       Reason
 12/10/2014   Gail Schmidt     In the event that the TOA band1 doesn't exist,
                               which may be the case of SR-only products are
                               being processed, then use the SR band1.
+1/13/2016    Gail Schmidt     Support the new L1T filenaming convention.  Fix
+                              a bug that caused the 'toa' or 'sr' to be
+                              duplicated in the output filename.
 
 NOTES:
   1. Don't allocate space for buf, since pointers to existing buffers will
@@ -55,6 +58,7 @@ Output_t *open_output
     char *mychar = NULL;         /* pointer to '_' */
     char scene_name[STR_SIZE];   /* scene name for the current scene */
     char production_date[MAX_DATE_LEN+1]; /* current date/time for production */
+    char ref_band_name[STR_SIZE]; /* band name for the reference band */
     time_t tp;                   /* time structure */
     struct tm *tm = NULL;        /* time structure for UTC time */
     int ib;    /* looping variable for bands */
@@ -90,6 +94,7 @@ Output_t *open_output
         {
             /* this is the index we'll use for reflectance band info */
             refl_indx = ib;
+            strcpy (ref_band_name, "_toa_band1");
             break;
         }
         else if (!strcmp (in_meta->band[ib].name, "sr_band1") &&
@@ -97,6 +102,7 @@ Output_t *open_output
         { /* check for SR band1 if TOA band1 doesn't exist */
             /* this is the index we'll use for reflectance band info */
             refl_indx = ib;
+            strcpy (ref_band_name, "_sr_band1");
             break;
         }
     }
@@ -124,12 +130,20 @@ Output_t *open_output
     }
     bmeta = this->metadata.band;
 
-    /* Determine the scene name */
+    /* Determine the scene name, strip off the reference band information */
     strcpy (scene_name, in_meta->band[refl_indx].file_name);
-    mychar = strchr (scene_name, '_');
-    if (mychar != NULL)
-      *mychar = '\0';
-  
+    mychar = scene_name;
+    while (mychar != NULL)
+    {
+        if (!strncmp (mychar, ref_band_name, strlen (ref_band_name)))
+        {
+            *mychar = '\0';
+            break;
+        }
+        else
+            mychar++;
+    }
+ 
     /* Get the current date/time (UTC) for the production date of each band */
     if (time (&tp) == -1)
     {
