@@ -1,7 +1,7 @@
-## Spectral Indices Version 2.3.0 Release Notes
-Release Date: December 22, 2015
+## Spectral Indices Version 2.4.0 Release Notes
+Release Date: March 23, 2016
 
-See git tag [version_2.3.0]
+See git tag [version_2.4.0]
 
 The spectral indices project contains application source code for producing spectral index products.  It currently supports Landsat 4-8 using a single application.
 
@@ -19,10 +19,6 @@ This application processes Landsat surface reflectance products or TOA reflectan
 ## Product Descriptions
 
 See the [Spectral Indices](http://landsat.usgs.gov/CDR_ECV.php) product guide for information about the index products.
-
-## Release Notes
-* Modified the EVI algorithm to apply a gain factor of 2.5 to the ratio to
-  better match what is implemented in the MODIS EVI products.
 
 ## Installation
 
@@ -74,3 +70,6 @@ After compiling the [espa-product-formatter](https://github.com/USGS-EROS/espa-p
 
 ## More Information
 This project is provided by the US Geological Survey (USGS) Earth Resources Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science Research and Development (LSRD) Project. For questions regarding products produced by this source code, please contact the Landsat Contact Us page and specify USGS CDR/ECV in the "Regarding" section. https://landsat.usgs.gov/contactus.php
+
+## Release Notes
+* Updated to support the new L1T file naming convention.
