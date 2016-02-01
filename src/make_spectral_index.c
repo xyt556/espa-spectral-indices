@@ -12,11 +12,6 @@ Type = None
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-4/6/2013     Gail Schmidt     Original Development
-
 NOTES:
   1. Input and output arrays are 1D arrays of size nlines * nsamps.
   2. The index products will be created using the scaled reflectance
@@ -84,11 +79,6 @@ Type = None
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-4/6/2013     Gail Schmidt     Original Development
 
 NOTES:
   1. Input and output arrays are 1D arrays of size nlines * nsamps.
@@ -163,11 +153,6 @@ Type = None
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-5/9/2013     Gail Schmidt     Original Development
 
 NOTES:
   1. Input and output arrays are 1D arrays of size nlines * nsamps.
@@ -248,12 +233,6 @@ Type = None
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date          Programmer       Reason
-----------    ---------------  -------------------------------------
-4/6/2013      Gail Schmidt     Original Development
-10/12/2015    Gail Schmidt     Added gain factor of 2.5 for EVI
 
 NOTES:
   1. Input and output arrays are 1D arrays of size nlines * nsamps.

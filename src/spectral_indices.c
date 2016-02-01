@@ -16,20 +16,6 @@ SUCCESS         Processing was successful
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date          Programmer       Reason
-----------    ---------------  -------------------------------------
-4/6/2013      Gail Schmidt     Original Development
-5/9/2013      Gail Schmidt     Modified to support MSAVI (modified SAVI)
-8/30/2013     Gail Schmidt     Modified to write the vegetation indices to
-                               the same output file (NDVI, EVI, SAVI, MSAVI)
-2/13/2014     Gail Schmidt     Modified to utilize the ESPA internal raw
-                               binary file format
-3/14/2014     Gail Schmidt     Updated to make sure that at least one spectral
-                               index product was specified for processing
-10/15/2014    Gail Schmidt     Modified to support Landsat 8 data (OLI and
-                               OLI_TIRS)
-
 NOTES:
   1. The products are output as {base_scene_name}-{spectral_index_ext}.hdf.
      However, the NDVI, EVI, SAVI, and MSAVI products will all be written
@@ -695,13 +681,6 @@ PURPOSE:  Prints the usage information for this application.
 RETURN VALUE:
 Type = None
 
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-4/6/2013    Gail Schmidt     Original Development
-2/14/2014   Gail Schmidt     Modified to support TOA vs. SR input bands
-6/30/2015     Gail Schmidt     Updated to support --version cmd line arg
-
 NOTES:
 ******************************************************************************/
 void usage ()
@@ -755,11 +734,6 @@ PURPOSE:  Prints the version information for this application.
 
 RETURN VALUE:
 Type = None
-
-HISTORY:
-Date        Programmer       Reason
----------   ---------------  -------------------------------------
-6/30/2015   Gail Schmidt     Original Development
 
 NOTES:
 ******************************************************************************/

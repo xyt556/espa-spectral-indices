@@ -20,20 +20,6 @@ data structure
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-2/12/2012    Gail Schmidt     Original Development (based on input routines
-                              from the LEDAPS lndsr application)
-2/14/2014    Gail Schmidt     Modified to work with ESPA internal raw binary
-                              file format
-12/10/2014   Gail Schmidt     In the event that the TOA band1 doesn't exist,
-                              which may be the case of SR-only products are
-                              being processed, then use the SR band1.
-1/13/2016    Gail Schmidt     Support the new L1T filenaming convention.  Fix
-                              a bug that caused the 'toa' or 'sr' to be
-                              duplicated in the output filename.
-
 NOTES:
   1. Don't allocate space for buf, since pointers to existing buffers will
      be assigned in the output structure.
@@ -55,7 +41,6 @@ Output_t *open_output
     char FUNC_NAME[] = "open_output";   /* function name */
     char errmsg[STR_SIZE];       /* error message */
     char *upper_str = NULL;      /* upper case version of the SI short name */
-    char *mychar = NULL;         /* pointer to '_' */
     char scene_name[STR_SIZE];   /* scene name for the current scene */
     char production_date[MAX_DATE_LEN+1]; /* current date/time for production */
     char ref_band_name[STR_SIZE]; /* band name for the reference band */
@@ -130,19 +115,8 @@ Output_t *open_output
     }
     bmeta = this->metadata.band;
 
-    /* Determine the scene name, strip off the reference band information */
-    strcpy (scene_name, in_meta->band[refl_indx].file_name);
-    mychar = scene_name;
-    while (mychar != NULL)
-    {
-        if (!strncmp (mychar, ref_band_name, strlen (ref_band_name)))
-        {
-            *mychar = '\0';
-            break;
-        }
-        else
-            mychar++;
-    }
+    /* Copy the scene name */
+    snprintf (scene_name, sizeof (scene_name), in_meta->global.scene_id);
  
     /* Get the current date/time (UTC) for the production date of each band */
     if (time (&tp) == -1)
@@ -193,20 +167,23 @@ Output_t *open_output
         bmeta[ib].pixel_size[1] = input->pixsize[1];
         strcpy (bmeta[ib].pixel_units, "meters");
         sprintf (bmeta[ib].app_version, "spectral_indices_%s", INDEX_VERSION);
-        strcpy (bmeta[ib].production_date, production_date);
+        snprintf (bmeta[ib].production_date, sizeof(bmeta[ib].production_date),
+            production_date);
         bmeta[ib].data_type = ESPA_INT16;
         bmeta[ib].fill_value = FILL_VALUE;
         bmeta[ib].saturate_value = SATURATE_VALUE;
         bmeta[ib].scale_factor = SCALE_FACTOR;
         bmeta[ib].valid_range[0] = -FLOAT_TO_INT;
         bmeta[ib].valid_range[1] = FLOAT_TO_INT;
-        strcpy (bmeta[ib].name, short_si_names[ib]);
-        strcpy (bmeta[ib].long_name, long_si_names[ib]);
+        snprintf (bmeta[ib].name, sizeof(bmeta[ib].name), short_si_names[ib]);
+        snprintf (bmeta[ib].long_name, sizeof(bmeta[ib].long_name),
+            long_si_names[ib]);
         strcpy (bmeta[ib].data_units, "band ratio index value");
 
         /* Set up the filename with the scene name and band name and open the
            file for write access */
-        sprintf (bmeta[ib].file_name, "%s_%s.img", scene_name, bmeta[ib].name);
+        snprintf (bmeta[ib].file_name, sizeof (bmeta[ib].name), "%s_%s.img",
+            scene_name, bmeta[ib].name);
         this->fp_bin[ib] = open_raw_binary (bmeta[ib].file_name, "w");
         if (this->fp_bin[ib] == NULL)
         {
@@ -237,14 +214,6 @@ SUCCESS    Successful completion
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-2/12/2012    Gail Schmidt     Original Development (based on input routines
-                              from the LEDAPS lndsr application)
-2/14/2014    Gail Schmidt     Modified to work with ESPA internal raw binary
-                              file format
 
 NOTES:
 ******************************************************************************/
@@ -288,14 +257,6 @@ SUCCESS    Successful completion
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-2/12/2012    Gail Schmidt     Original Development (based on input routines
-                              from the LEDAPS lndsr application)
-2/14/2014    Gail Schmidt     Modified to work with ESPA internal raw binary
-                              file format
-
 NOTES:
 ******************************************************************************/
 int free_output
@@ -338,14 +299,6 @@ SUCCESS    Successful completion
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-2/12/2012    Gail Schmidt     Original Development (based on input routines
-                              from the LEDAPS lndsr application)
-2/14/2014    Gail Schmidt     Modified to work with ESPA internal raw binary
-                              file format
 
 NOTES:
 ******************************************************************************/
@@ -422,11 +375,6 @@ up_str     Upper case version of the input string
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date         Programmer       Reason
----------    ---------------  -------------------------------------
-2/14/2012    Gail Schmidt     Original Development
 
 NOTES:
 ******************************************************************************/

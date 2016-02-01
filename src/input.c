@@ -18,16 +18,6 @@ non-NULL   Successful completion
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-4/6/2013    Gail Schmidt     Original Development (based on input routines
-                             from the LEDAPS lndsr application)
-2/13/2014   Gail Schmidt     Modified to work with ESPA internal raw binary
-                             file format
-10/15/2014  Gail Schmidt     Modified to process Landsat 8 data (OLI and
-                             OLI_TIRS)
-
 NOTES:
   1. This routine opens the input reflectance files.  It also allocates memory
      for pointers in the input structure.  It is up to the caller to use
@@ -322,14 +312,6 @@ Type = None
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-1/2/2012    Gail Schmidt     Original Development (based on input routines
-                             from the LEDAPS lndsr application)
-2/13/2014   Gail Schmidt     Modified to work with ESPA internal raw binary
-                             file format
-
 NOTES:
 ******************************************************************************/
 void close_input
@@ -360,14 +342,6 @@ Type = None
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-1/2/2012    Gail Schmidt     Original Development (based on input routines
-                             from the LEDAPS lndsr application)
-2/13/2014   Gail Schmidt     Modified to work with ESPA internal raw binary
-                             file format
 
 NOTES:
 ******************************************************************************/
@@ -417,14 +391,6 @@ SUCCESS    Successful completion
 
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-1/2/2012    Gail Schmidt     Original Development (based on input routines
-                             from the LEDAPS lndsr application)
-2/13/2014   Gail Schmidt     Modified to work with ESPA internal raw binary
-                             file format
 
 NOTES:
   1. The Input_t data structure needs to be populated and memory allocated

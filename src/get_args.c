@@ -18,16 +18,6 @@ SUCCESS         No errors encountered
 PROJECT:  Land Satellites Data System Science Research and Development (LSRD)
 at the USGS EROS
 
-HISTORY:
-Date          Programmer       Reason
-----------    ---------------  -------------------------------------
-4/6/2013      Gail Schmidt     Original Development
-5/9/2013      Gail Schmidt     Modified to support MSAVI
-2/13/2014     Gail Schmidt     Added specific support for TOA vs. SR products
-                               given that the ESPA internal file format
-                               contains both
-6/30/2015     Gail Schmidt     Supported the --version command-line argument
-
 NOTES:
   1. Memory is allocated for the input file.  This should be character a
      pointer set to NULL on input.  The caller is responsible for freeing the
