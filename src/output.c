@@ -116,7 +116,7 @@ Output_t *open_output
     bmeta = this->metadata.band;
 
     /* Copy the scene name */
-    snprintf (scene_name, sizeof (scene_name), in_meta->global.scene_id);
+    snprintf (scene_name, sizeof (scene_name), "%s", in_meta->global.scene_id);
  
     /* Get the current date/time (UTC) for the production date of each band */
     if (time (&tp) == -1)
@@ -168,16 +168,17 @@ Output_t *open_output
         strcpy (bmeta[ib].pixel_units, "meters");
         sprintf (bmeta[ib].app_version, "spectral_indices_%s", INDEX_VERSION);
         snprintf (bmeta[ib].production_date, sizeof(bmeta[ib].production_date),
-            production_date);
+            "%s", production_date);
         bmeta[ib].data_type = ESPA_INT16;
         bmeta[ib].fill_value = FILL_VALUE;
         bmeta[ib].saturate_value = SATURATE_VALUE;
         bmeta[ib].scale_factor = SCALE_FACTOR;
         bmeta[ib].valid_range[0] = -FLOAT_TO_INT;
         bmeta[ib].valid_range[1] = FLOAT_TO_INT;
-        snprintf (bmeta[ib].name, sizeof(bmeta[ib].name), short_si_names[ib]);
+        snprintf (bmeta[ib].name, sizeof(bmeta[ib].name), "%s",
+            short_si_names[ib]);
         snprintf (bmeta[ib].long_name, sizeof(bmeta[ib].long_name),
-            long_si_names[ib]);
+            "%s", long_si_names[ib]);
         strcpy (bmeta[ib].data_units, "band ratio index value");
 
         /* Set up the filename with the scene name and band name and open the
