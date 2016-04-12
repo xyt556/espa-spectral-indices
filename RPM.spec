@@ -6,7 +6,7 @@
 
 # ----------------------------------------------------------------------------
 Name:		espa-spectral-indices
-Version:	2.4.0
+Version:	201605
 Release:	1%{?dist}
 Summary:	ESPA Spectral Indices Software
 
@@ -19,7 +19,7 @@ BuildArch:	x86_64
 Packager:	USGS EROS LSRD
 
 BuildRequires:	espa-product-formatter
-Requires:	espa-product-formatter >= 1.6.0
+Requires:	espa-product-formatter >= 201605
 
 
 # ----------------------------------------------------------------------------
@@ -29,7 +29,7 @@ Provides science application executables for generating spectral indice products
 
 # ----------------------------------------------------------------------------
 # Specify the repository tag/branch to clone and build from
-%define tagname dev_v2.4.0
+%define tagname dev_may2016
 # Specify the name of the directory to clone into
 %define clonedname %{name}-%{tagname}
 
@@ -76,9 +76,11 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
+* Tue Apr 12 2016 Ronald D Dilley <rdilley@usgs.gov>
+- Updated for May 2016 release
+
 * Mon Jan 25 2016 Ronald D Dilley <rdilley@usgs.gov>
 - Updated for Mar 2016 release
-
 * Wed Dec 02 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Changed release number for a recompile against the product formatter for Dec 2015 release
 * Wed Nov 04 2015 Ronald D Dilley <rdilley@usgs.gov>
