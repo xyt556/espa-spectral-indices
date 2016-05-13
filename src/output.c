@@ -116,7 +116,8 @@ Output_t *open_output
     bmeta = this->metadata.band;
 
     /* Copy the scene name */
-    snprintf (scene_name, sizeof (scene_name), "%s", in_meta->global.scene_id);
+    snprintf (scene_name, sizeof (scene_name), "%s",
+        in_meta->global.product_id);
  
     /* Get the current date/time (UTC) for the production date of each band */
     if (time (&tp) == -1)

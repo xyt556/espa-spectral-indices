@@ -9,7 +9,7 @@ typedef signed short int16;
 typedef unsigned char uint8;
 
 /* Spectral index version */
-#define INDEX_VERSION "2.4.0"
+#define INDEX_VERSION "2.5.0"
 
 /* How many lines of data should be processed at one time */
 #define PROC_NLINES 1000
