@@ -174,8 +174,8 @@ Output_t *open_output
         bmeta[ib].fill_value = FILL_VALUE;
         bmeta[ib].saturate_value = SATURATE_VALUE;
         bmeta[ib].scale_factor = SCALE_FACTOR;
-        bmeta[ib].valid_range[0] = -FLOAT_TO_INT;
-        bmeta[ib].valid_range[1] = FLOAT_TO_INT;
+        bmeta[ib].valid_range[0] = (float) -FLOAT_TO_INT;
+        bmeta[ib].valid_range[1] = (float) FLOAT_TO_INT;
         snprintf (bmeta[ib].name, sizeof(bmeta[ib].name), "%s",
             short_si_names[ib]);
         snprintf (bmeta[ib].long_name, sizeof(bmeta[ib].long_name),
