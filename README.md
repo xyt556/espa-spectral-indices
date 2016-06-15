@@ -1,7 +1,7 @@
-## Spectral Indices Version 2.4.0 Release Notes
-Release Date: March 2016
+## Spectral Indices Version 2.5.0 Release Notes
+Release Date: August 2016
 
-See git tag [version_2.4.0]
+See git tag [version_2.5.0]
 
 The spectral indices project contains application source code for producing spectral index products.  It currently supports Landsat 4-8 using a single application.
 
@@ -72,4 +72,6 @@ After compiling the [espa-product-formatter](https://github.com/USGS-EROS/espa-p
 This project is provided by the US Geological Survey (USGS) Earth Resources Observation and Science (EROS) Land Satellite Data Systems (LSDS) Science Research and Development (LSRD) Project. For questions regarding products produced by this source code, please contact the Landsat Contact Us page and specify USGS CDR/ECV in the "Regarding" section. https://landsat.usgs.gov/contactus.php
 
 ## Release Notes
-* Updated to support the new L1T file naming convention.
+* Updated to support the new XML schema changes for scene_id to product_id.
+* Updated to support the new XML schema changes for the floating point
+  valid_range data type.
