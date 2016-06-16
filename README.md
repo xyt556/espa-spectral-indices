@@ -75,3 +75,5 @@ This project is provided by the US Geological Survey (USGS) Earth Resources Obse
 * Updated to support the new XML schema changes for scene_id to product_id.
 * Updated to support the new XML schema changes for the floating point
   valid_range data type.
+* Verified the application supports the new collection file naming convention
+  with a 4-character product_id versus a 3-character ID.
