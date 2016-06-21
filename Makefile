@@ -4,7 +4,7 @@
 # Project Name: spectral indicies
 # Makefile that will invoke subsequent Makefiles in subdirectories.
 #-----------------------------------------------------------------------------
-.PHONY: check-environment all install clean
+.PHONY: check-environment all install clean rpms
 
 include make.config
 
@@ -28,6 +28,10 @@ clean:
         (cd scripts; $(MAKE) clean);
 	echo "make clean in src"; \
         (cd src; $(MAKE) clean);
+
+#-----------------------------------------------------------------------------
+rpms:
+	rpmbuild -bb --clean RPM_spec_files/RPM.spec
 
 #-----------------------------------------------------------------------------
 check-environment:
