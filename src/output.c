@@ -152,8 +152,8 @@ Output_t *open_output
  
     for (ib = 0; ib < nband; ib++)
     {
-        strncpy (bmeta[ib].short_name, in_meta->band[refl_indx].short_name, 3);
-        bmeta[ib].short_name[3] = '\0';
+        strncpy (bmeta[ib].short_name, in_meta->band[refl_indx].short_name, 4);
+        bmeta[ib].short_name[4] = '\0';
         upper_str = upper_case_str (short_si_names[ib]);
         strcat (bmeta[ib].short_name, upper_str);
         strcpy (bmeta[ib].product, "spectral_indices");
